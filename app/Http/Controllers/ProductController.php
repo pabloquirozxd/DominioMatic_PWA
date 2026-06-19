@@ -12,7 +12,13 @@ class ProductController extends Controller
 {
     public function index(): Response
     {
-        $products = Product::orderBy('name')->get();
+        $companyId = auth()->user()->company_id;
+
+        abort_unless($companyId, 403);
+
+        $products = Product::where('company_id', $companyId)
+            ->orderBy('name')
+            ->get();
 
         return Inertia::render('Products/Index', [
             'products' => $products,
@@ -21,6 +27,10 @@ class ProductController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $companyId = auth()->user()->company_id;
+
+        abort_unless($companyId, 403);
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
@@ -30,6 +40,7 @@ class ProductController extends Controller
         ]);
 
         Product::create([
+            'company_id' => $companyId,
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
             'price_list' => $validated['price_list'],
@@ -42,6 +53,10 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product): RedirectResponse
     {
+        $companyId = auth()->user()->company_id;
+
+        abort_unless($companyId && $product->company_id === $companyId, 403);
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
@@ -63,6 +78,10 @@ class ProductController extends Controller
 
     public function destroy(Product $product): RedirectResponse
     {
+        $companyId = auth()->user()->company_id;
+
+        abort_unless($companyId && $product->company_id === $companyId, 403);
+
         $product->delete();
 
         return redirect()->route('products.index');

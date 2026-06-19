@@ -6,9 +6,17 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 
+const props = defineProps({
+    companies: {
+        type: Array,
+        default: () => [],
+    },
+});
+
 const form = useForm({
     name: '',
     email: '',
+    company_id: '',
     password: '',
     password_confirmation: '',
 });
@@ -54,6 +62,24 @@ const submit = () => {
                 />
 
                 <InputError class="mt-2" :message="form.errors.email" />
+            </div>
+
+            <div class="mt-4">
+    <InputLabel for="company_id" value="Company" />
+
+                <select
+                    id="company_id"
+                    v-model="form.company_id"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                    required
+                >
+                    <option value="">Select a company</option>
+                    <option v-for="company in companies" :key="company.id" :value="company.id">
+                        {{ company.name }}
+                    </option>
+                </select>
+
+                <InputError class="mt-2" :message="form.errors.company_id" />
             </div>
 
             <div class="mt-4">

@@ -146,10 +146,11 @@ function deleteSubscription(id) {
                                 class="hover:bg-gray-50/80 dark:hover:bg-[#1c1c1f] transition-colors"
                             >
                                 <td class="px-4 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                                    {{ subscription.contact?.name || '—' }}
+                                    {{ subscription.contact_name }}
                                 </td>
+
                                 <td class="px-4 py-4 text-sm text-gray-600 dark:text-gray-300">
-                                    {{ subscription.product?.name || '—' }}
+                                    {{ subscription.product_name }}
                                 </td>
                                 <td class="px-4 py-4 text-sm font-medium text-gray-900 dark:text-white">
                                     ${{ subscription.total_neto }}
