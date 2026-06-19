@@ -1,3 +1,60 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ==========================================
+   Apple-like Theme Transition
+========================================== */
+
+html,
+body,
+div,
+section,
+article,
+header,
+nav,
+main,
+aside,
+footer,
+button,
+input,
+textarea,
+select,
+table,
+thead,
+tbody,
+tr,
+td,
+th,
+span,
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+a {
+    transition:
+        background-color 1000ms ease,
+        border-color 1000ms ease,
+        color 1000ms ease,
+        box-shadow 1000ms ease,
+        backdrop-filter 1000ms ease;
+}
+
+@layer components {
+    .glass-card {
+        @apply rounded-[2rem] bg-white/75 border border-gray-200/60 backdrop-blur-[24px] backdrop-saturate-[180%] transition-all duration-500
+        /* Modo Oscuro Base */
+        dark:bg-[#121214]/40 dark:border-white/[0.12];
+
+        /* Manejo de sombras nativas para evitar que PostCSS se rompa */
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.03);
+    }
+
+    /* Inyectamos la sombra compleja para el modo oscuro de forma limpia */
+    .dark .glass-card {
+        box-shadow: 0 30px 70px rgba(0, 0, 0, 0.45), inset 0 1px 0px rgba(255, 255, 255, 0.15);
+    }
+}

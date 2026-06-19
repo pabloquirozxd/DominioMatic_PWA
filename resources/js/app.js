@@ -7,7 +7,35 @@ import { createApp, h } from 'vue';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+// Configuración para mantener el tema oscuro o claro según la preferencia del usuario
+const savedTheme =
+    localStorage.getItem(
+        'theme'
+    ) || 'system';
 
+const html =
+    document.documentElement;
+
+if (savedTheme === 'dark') {
+
+    html.classList.add('dark');
+
+} else if (
+    savedTheme === 'light'
+) {
+
+    html.classList.remove('dark');
+
+} else {
+
+    if (
+        window.matchMedia(
+            '(prefers-color-scheme: dark)'
+        ).matches
+    ) {
+        html.classList.add('dark');
+    }
+}
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: (name) =>
@@ -25,3 +53,4 @@ createInertiaApp({
         color: '#4B5563',
     },
 });
+

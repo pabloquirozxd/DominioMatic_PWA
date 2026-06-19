@@ -3,19 +3,46 @@ import { computed } from 'vue';
 import { Link } from '@inertiajs/vue3';
 
 const props = defineProps({
-    href: {
-        type: String,
-        required: true,
-    },
-    active: {
-        type: Boolean,
-    },
+    href: String,
+    active: Boolean,
 });
 
 const classes = computed(() =>
     props.active
-        ? 'inline-flex items-center px-1 pt-1 border-b-2 border-indigo-400 text-sm font-medium leading-5 text-gray-900 focus:outline-none focus:border-indigo-700 transition duration-150 ease-in-out'
-        : 'inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none focus:text-gray-700 focus:border-gray-300 transition duration-150 ease-in-out',
+        ? `
+        inline-flex items-center
+        px-4 py-2
+        rounded-xl
+        text-sm font-semibold
+
+        bg-gradient-to-r
+        from-[#0066cc]
+        via-[#c600bf]
+        to-[#ff2d55]
+
+        text-white
+        shadow-lg
+        shadow-fuchsia-500/20
+
+        transition-all
+        duration-300
+        `
+        : `
+        inline-flex items-center
+        px-4 py-2
+        rounded-xl
+
+        text-sm font-medium
+
+        text-gray-600
+        dark:text-gray-300
+
+        hover:bg-black/5
+        dark:hover:bg-white/10
+
+        transition-all
+        duration-300
+        `
 );
 </script>
 

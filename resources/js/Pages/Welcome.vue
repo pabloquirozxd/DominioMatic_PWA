@@ -120,9 +120,10 @@
                     <div class="flex justify-between items-center h-16">
                         
                         <div class="flex-shrink-0 flex items-center cursor-pointer" @click="navigateTo('inicio')">
-                            <img src="/images/dominiomatic_logo.png" alt="DominioMatic IT" class="h-8 w-auto">
-                            <span class="font-semibold tracking-tight text-sm hidden sm:block ml-3 dark:text-white">DominioMatic IT</span>
+                            <img src="/images/dominiomatic_logo.png" alt="DominioMatic" class="h-8 w-auto">
+                            <span class="font-semibold tracking-tight text-sm hidden sm:block ml-3 dark:text-white"></span>
                         </div>
+
                         
                         <div class="hidden md:flex space-x-8 text-sm font-medium">
                             <button @click="navigateTo('inicio')" :class="currentView === 'inicio' ? 'text-cyan-600 dark:text-cyan-400 font-semibold' : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'" class="transition-colors">Inicio</button>
@@ -181,6 +182,57 @@
                         </div>
                     </section>
 
+                    <section id="nosotros" class="py-24 bg-gray-50 dark:bg-[#0a0a0c] reveal">
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                                <div>
+                                    <span class="text-apple-glow font-bold uppercase tracking-wider text-sm mb-3 block">
+                                        Nosotros
+                                    </span>
+                                    <h2 class="text-4xl md:text-5xl font-bold tracking-tight text-gray-900 dark:text-white mb-6">
+                                        Somos especialistas en marcas online, diseño y desarrollo web.
+                                    </h2>
+                                    <p class="text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-5">
+                                        Comenzamos como especialistas en Diseño y Desarrollo de Sitios Web, además de Web & Mail Hosting.
+                                        Con el tiempo ampliamos nuestros servicios hacia dos áreas que complementan perfectamente esa base:
+                                        Gestión de Redes Sociales y Diseño Gráfico Corporativo.
+                                    </p>
+                                    <p class="text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-5">
+                                        Desde inicios de 2001, cuando atendimos a nuestro primer cliente en Estados Unidos, empezamos a formar
+                                        una trayectoria marcada por estándares internacionales de calidad, competitividad, rapidez y puntualidad.
+                                    </p>
+                                    <p class="text-lg text-gray-600 dark:text-gray-300 leading-relaxed">
+                                        Con los años trabajamos con clientes de distintas partes del mundo, y esa experiencia consolidó
+                                        a DominioMatic.com como una empresa especialista en Manejo y Creación de Marcas Online.
+                                    </p>
+                                </div>
+
+                                <div class="grid gap-5">
+                                    <div class="rounded-3xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 shadow-sm">
+                                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Desde 2001</h3>
+                                        <p class="text-gray-600 dark:text-gray-300">
+                                            Una trayectoria construida con experiencia real y proyectos para clientes de diferentes países.
+                                        </p>
+                                    </div>
+
+                                    <div class="rounded-3xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 shadow-sm">
+                                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Enfoque integral</h3>
+                                        <p class="text-gray-600 dark:text-gray-300">
+                                            Desarrollo web, hosting, redes sociales y diseño gráfico bajo una misma visión de marca.
+                                        </p>
+                                    </div>
+
+                                    <div class="rounded-3xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 shadow-sm">
+                                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Marca online sólida</h3>
+                                        <p class="text-gray-600 dark:text-gray-300">
+                                            Soluciones pensadas para ayudar a empresas a verse profesionales y crecer con presencia digital.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
                     <section id="servicios" class="py-24 bg-white dark:bg-[#0a0a0c] reveal">
                         <div class="max-w-7xl mx-auto px-4 text-center">
                             <span class="text-apple-glow font-bold uppercase tracking-wider text-sm mb-2 block">Problema / Solución</span>
@@ -218,33 +270,117 @@
                             <h2 class="text-4xl font-bold tracking-tight mb-4 dark:text-white">Planes a tu medida</h2>
                             <p class="text-xl text-gray-500 dark:text-gray-400 mb-16">Escala tu infraestructura técnica con nosotros.</p>
                             
-                            <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                                <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-sm border border-gray-200 dark:border-gray-700 text-left relative">
-                                    <h3 class="text-2xl font-bold dark:text-white mb-2">Freemium</h3>
-                                    <p class="text-gray-500 dark:text-gray-400 mb-6">Para pequeños equipos o pruebas.</p>
-                                    <div class="text-4xl font-bold dark:text-white mb-6">$0<span class="text-lg text-gray-400 font-normal">/mes</span></div>
-                                    <ul class="space-y-4 mb-8 text-gray-600 dark:text-gray-300">
-                                        <li class="flex items-center gap-2"><span>✓</span> Hasta 5 dominios</li>
-                                        <li class="flex items-center gap-2"><span>✓</span> 1 Inquilino (Tenant)</li>
-                                        <li class="flex items-center gap-2"><span>✓</span> Soporte comunitario</li>
-                                    </ul>
-                                    <button @click="navigateToSection('contacto')" class="w-full py-3 rounded-full font-medium border-2 border-gray-900 dark:border-white text-gray-900 dark:text-white hover:bg-gray-900 hover:text-white dark:hover:bg-white dark:hover:text-black transition">Comenzar Gratis</button>
-                                </div>
-                                <div class="bg-gray-900 dark:bg-black p-8 rounded-3xl shadow-2xl border border-gray-800 text-left relative overflow-hidden">
-                                    <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#0066cc] to-[#c600bf] rounded-full mix-blend-screen filter blur-3xl opacity-50"></div>
-                                    <span class="bg-gradient-to-r from-[#c600bf] to-[#ff2d55] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide absolute top-6 right-6">Recomendado</span>
-                                    <h3 class="text-2xl font-bold text-white mb-2 relative z-10">Pro Enterprise</h3>
-                                    <p class="text-gray-400 mb-6 relative z-10">Para agencias y departamentos TI.</p>
-                                    <div class="text-4xl font-bold text-white mb-6 relative z-10">$49<span class="text-lg text-gray-500 font-normal">/mes</span></div>
-                                    <ul class="space-y-4 mb-8 text-gray-300 relative z-10">
-                                        <li class="flex items-center gap-2 text-white"><span>✓</span> Dominios Ilimitados</li>
-                                        <li class="flex items-center gap-2 text-white"><span>✓</span> Multi-Tenant Ilimitado</li>
-                                        <li class="flex items-center gap-2 text-white"><span>✓</span> API de Atributos EAV</li>
-                                        <li class="flex items-center gap-2 text-white"><span>✓</span> Soporte 24/7 Dedicado</li>
-                                    </ul>
-                                    <button @click="navigateToSection('contacto')" class="w-full py-3 rounded-full font-medium apple-glow-btn text-white transition relative z-10">Adquirir Pro</button>
-                                </div>
-                            </div>
+<div class="grid lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+
+    <!-- FREEMIUM -->
+    <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-sm border border-gray-200 dark:border-gray-700 text-left relative">
+        <h3 class="text-2xl font-bold dark:text-white mb-2">
+            Freemium Beta
+        </h3>
+
+        <p class="text-gray-500 dark:text-gray-400 mb-6">
+            Ideal para probar la plataforma antes de una implementación empresarial.
+        </p>
+
+        <div class="text-4xl font-bold dark:text-white mb-6">
+            $0
+            <span class="text-lg text-gray-400 font-normal">/mes</span>
+        </div>
+
+        <ul class="space-y-4 mb-8 text-gray-600 dark:text-gray-300">
+            <li class="flex items-center gap-2"><span>✓</span> Acceso al entorno Beta</li>
+            <li class="flex items-center gap-2"><span>✓</span> Base de datos compartida</li>
+            <li class="flex items-center gap-2"><span>✓</span> Interfaz estándar DominioMatic</li>
+            <li class="flex items-center gap-2"><span>✓</span> Gestión básica de clientes</li>
+            <li class="flex items-center gap-2"><span>✓</span> Actualizaciones de prueba</li>
+            <li class="flex items-center gap-2"><span>✓</span> Soporte por correo electrónico</li>
+        </ul>
+
+        <button
+            @click="navigateToSection('contacto')"
+            class="w-full py-3 rounded-full font-medium border-2 border-gray-900 dark:border-white text-gray-900 dark:text-white hover:bg-gray-900 hover:text-white dark:hover:bg-white dark:hover:text-black transition">
+            Probar Gratis
+        </button>
+    </div>
+
+    <!-- STANDARD -->
+    <div class="bg-gray-900 dark:bg-black p-8 rounded-3xl shadow-2xl border border-gray-800 text-left relative overflow-hidden">
+
+        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#0066cc] to-[#c600bf] rounded-full mix-blend-screen filter blur-3xl opacity-50"></div>
+
+        <span class="bg-gradient-to-r from-[#0066cc] to-[#00b3ff] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide absolute top-6 right-6">
+            Empresas
+        </span>
+
+        <h3 class="text-2xl font-bold text-white mb-2 relative z-10">
+            Standard Enterprise
+        </h3>
+
+        <p class="text-gray-400 mb-6 relative z-10">
+            Plataforma profesional lista para producción.
+        </p>
+
+        <div class="text-4xl font-bold text-white mb-6 relative z-10">
+            $19.99
+            <span class="text-lg text-gray-500 font-normal">/mes</span>
+        </div>
+
+        <ul class="space-y-4 mb-8 text-gray-300 relative z-10">
+            <li class="flex items-center gap-2"><span>✓</span> Todo lo incluido en Freemium</li>
+            <li class="flex items-center gap-2"><span>✓</span> 1 usuario administrador incluido</li>
+            <li class="flex items-center gap-2"><span>✓</span> Facturas personalizables</li>
+            <li class="flex items-center gap-2"><span>✓</span> Base de datos dedicada</li>
+            <li class="flex items-center gap-2"><span>✓</span> Personalización básica de interfaz</li>
+            <li class="flex items-center gap-2"><span>✓</span> Backups automáticos</li>
+            <li class="flex items-center gap-2"><span>✓</span> Soporte técnico</li>
+        </ul>
+
+        <button
+            @click="navigateToSection('contacto')"
+            class="w-full py-3 rounded-full font-medium apple-glow-btn text-white transition relative z-10">
+            Solicitar Implementación
+        </button>
+    </div>
+
+    <!-- PRO ANUAL -->
+    <div class="bg-gradient-to-br from-[#0f172a] via-[#1e1b4b] to-[#170f1c] p-8 rounded-3xl shadow-2xl border border-fuchsia-500/30 text-left relative overflow-hidden">
+
+        <span class="bg-gradient-to-r from-[#c600bf] to-[#ff2d55] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide absolute top-6 right-6">
+            Premium
+        </span>
+
+        <h3 class="text-2xl font-bold text-white mb-2">
+            Pro Enterprise Annual
+        </h3>
+
+        <p class="text-gray-300 mb-6">
+            Solución corporativa completamente personalizada.
+        </p>
+
+        <div class="text-4xl font-bold text-white mb-6">
+            $199.99
+            <span class="text-lg text-gray-400 font-normal">/año</span>
+        </div>
+
+        <ul class="space-y-4 mb-8 text-gray-200">
+            <li class="flex items-center gap-2"><span>✓</span> Todo lo incluido en Standard</li>
+            <li class="flex items-center gap-2"><span>✓</span> Diseño visual personalizado</li>
+            <li class="flex items-center gap-2"><span>✓</span> Plataforma adaptada al rubro</li>
+            <li class="flex items-center gap-2"><span>✓</span> Base de datos exclusiva optimizada</li>
+            <li class="flex items-center gap-2"><span>✓</span> Integración de procesos internos</li>
+            <li class="flex items-center gap-2"><span>✓</span> Soporte técnico dedicado</li>
+            <li class="flex items-center gap-2"><span>✓</span> Consultoría especializada</li>
+            <li class="flex items-center gap-2"><span>✓</span> Mantenimiento premium</li>
+        </ul>
+
+        <button
+            @click="navigateToSection('contacto')"
+            class="w-full py-3 rounded-full font-medium bg-white text-black hover:bg-gray-200 transition">
+            Solicitar Cotización
+        </button>
+    </div>
+
+</div>
                         </div>
                     </section>
 
@@ -279,9 +415,9 @@
                                 <h2 class="text-3xl md:text-4xl font-bold mb-4 relative z-10">Optimiza tu PyME hoy</h2>
                                 <p class="text-gray-300 mb-8 relative z-10 text-lg">Regístrate para obtener una demostración o iniciar tu prueba gratis.</p>
                                 
-                                <form @submit.prevent="handleFormSubmit" ref="leadForm" class="relative z-10 flex flex-col md:flex-row gap-4">
+                                <form @submit.prevent="handleFormSubmit" ref="leadForm" class="relative z-10 flex flex-col md:flex-row gap-2">
                                     <input type="text" placeholder="Nombre completo" required class="flex-1 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-6 py-4 text-white placeholder-gray-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all">
-                                    <input type="email" placeholder="Tu mejor correo" required class="flex-1 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-6 py-4 text-white placeholder-gray-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all">
+                                    <input type="email" placeholder="Tu correo electrónico" required class="flex-1 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-6 py-4 text-white placeholder-gray-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all">
                                     <button type="submit" class="apple-glow-btn px-8 py-4 rounded-2xl font-bold transition-all whitespace-nowrap">
                                         Quiero mi Demo
                                     </button>
@@ -454,7 +590,7 @@
 
             <footer class="py-12 border-t border-gray-200 dark:border-white/10 bg-white dark:bg-[#0a0a0c] text-sm text-gray-500 dark:text-gray-400 transition-colors">
                 <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-                    <p>&copy; 2026 DominioMatic IT. Todos los derechos reservados.</p>
+                    <p>&copy; 2026 DominioMatic.com. Todos los derechos reservados.</p>
                     <div class="flex space-x-6">
                         <a href="#" class="hover:text-gray-900 dark:hover:text-white transition-colors">Términos de Servicio</a>
                         <a href="#" class="hover:text-gray-900 dark:hover:text-white transition-colors">Política de Privacidad</a>
