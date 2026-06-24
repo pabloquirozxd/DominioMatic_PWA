@@ -24,11 +24,11 @@ class DemoDataSeeder extends Seeder
         );
 
         User::updateOrCreate(
-            ['email' => 'prueba@gmail.com'],
+            ['email' => 'pablo@quiroz.me'],
             [
-                'name' => 'prueba',
+                'name' => 'Pablo',
                 'company_id' => $company->id,
-                'password' => Hash::make('Password123*'),
+                'password' => Hash::make('123456789'),
             ]
         );
 
@@ -37,7 +37,7 @@ class DemoDataSeeder extends Seeder
             [
                 'name' => 'Edwin',
                 'company_id' => $company->id,
-                'password' => Hash::make('Password123*'),
+                'password' => Hash::make('987654321'),
             ]
         );
 
