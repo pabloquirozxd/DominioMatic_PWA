@@ -5,6 +5,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\Auth\GoogleAuthController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -50,6 +51,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/subscriptions/{subscription}', [SubscriptionController::class, 'update'])->name('subscriptions.update');
     Route::delete('/subscriptions/{subscription}', [SubscriptionController::class, 'destroy'])->name('subscriptions.destroy');
 });
+
+Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect'])
+    ->middleware('guest')
+    ->name('google.redirect');
+
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])
+    ->middleware('guest')
+    ->name('google.callback');
 
 // Ruta temporal para probar el diseño
 Route::get('/test-apple', function () {

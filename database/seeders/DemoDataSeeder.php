@@ -14,14 +14,26 @@ class DemoDataSeeder extends Seeder
 {
     public function run(): void
     {
-        $company = Company::firstOrCreate(
-            ['slug' => 'dominiomatic'],
-            [
-                'name' => 'DominioMatic',
-                'primary_color' => '#007AFF',
-                'secondary_color' => '#5856D6',
-            ]
-        );
+        $company = Company::query()
+        ->where('slug', 'dominiomatic.com')
+        ->orWhere('slug', 'dominiomatic')
+        ->first();
+
+    if (! $company) {
+        $company = Company::create([
+            'name' => 'DominioMatic.com',
+            'slug' => 'dominiomatic.com',
+            'primary_color' => '#007AFF',
+            'secondary_color' => '#5856D6',
+        ]);
+    } else {
+        $company->update([
+            'name' => 'DominioMatic.com',
+            'slug' => 'dominiomatic.com',
+            'primary_color' => '#007AFF',
+            'secondary_color' => '#5856D6',
+        ]);
+}
 
         User::updateOrCreate(
             ['email' => 'pablo@quiroz.me'],
