@@ -18,15 +18,15 @@ class GoogleAuthController extends Controller
 {
     public function redirect(Request $request): RedirectResponse
     {
-        $mode = $request->query('mode', 'login');
+        $mode = $request->input('mode', 'login');
 
         if ($mode === 'register') {
-            $request->validate([
+            $validated = $request->validate([
                 'company_identifier' => ['required', 'string', 'max:255'],
             ]);
 
             $companyIdentifier = $this->normalizeCompanyIdentifier(
-                $request->query('company_identifier')
+                $validated['company_identifier']
             );
 
             $company = Company::query()
@@ -40,16 +40,13 @@ class GoogleAuthController extends Controller
                 ]);
             }
 
-            session([
-                'google_auth_mode' => 'register',
-                'google_auth_company_id' => $company->id,
-            ]);
+            $request->session()->put('google_auth_mode', 'register');
+            $request->session()->put('google_auth_company_id', $company->id);
+            $request->session()->save();
         } else {
-            session([
-                'google_auth_mode' => 'login',
-            ]);
-
-            session()->forget('google_auth_company_id');
+            $request->session()->put('google_auth_mode', 'login');
+            $request->session()->forget('google_auth_company_id');
+            $request->session()->save();
         }
 
         return Socialite::driver('google')->redirect();

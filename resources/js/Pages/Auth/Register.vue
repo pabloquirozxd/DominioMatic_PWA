@@ -18,15 +18,19 @@ const submit = () => {
 };
 
 const continueWithGoogle = () => {
-    if (!form.company_identifier.trim()) {
+    const companyIdentifier = form.company_identifier.trim();
+
+    if (!companyIdentifier) {
         form.setError('company_identifier', 'Primero escribe el nombre de tu empresa para continuar con Google.');
         return;
     }
 
-    window.location.href = route('google.redirect', {
+    const params = new URLSearchParams({
         mode: 'register',
-        company_identifier: form.company_identifier,
+        company_identifier: companyIdentifier,
     });
+
+    window.location.href = `${route('google.redirect')}?${params.toString()}`;
 };
 </script>
 
