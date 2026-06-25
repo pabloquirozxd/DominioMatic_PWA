@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Laravel\Socialite\Facades\Socialite;
+use Illuminate\Http\JsonResponse;
 use Throwable;
 
 class GoogleAuthController extends Controller
@@ -29,15 +30,17 @@ class GoogleAuthController extends Controller
                 $validated['company_identifier']
             );
 
-            $company = Company::query()
-                ->whereRaw('LOWER(slug) = ?', [$companyIdentifier])
-                ->orWhereRaw('LOWER(name) = ?', [$companyIdentifier])
-                ->first();
+            $company = $this->findCompany($companyIdentifier);
 
             if (! $company) {
-                throw ValidationException::withMessages([
-                    'company_identifier' => 'No encontramos una empresa registrada con ese nombre. Verifica que esté escrito correctamente.',
-                ]);
+                return redirect()
+                    ->route('register')
+                    ->withErrors([
+                        'company_identifier' => 'No encontramos una empresa registrada con ese nombre. Verifica que esté escrito correctamente.',
+                    ])
+                    ->withInput([
+                        'company_identifier' => $request->input('company_identifier'),
+                    ]);
             }
 
             $request->session()->put('google_auth_mode', 'register');
@@ -115,5 +118,40 @@ class GoogleAuthController extends Controller
         $value = preg_replace('/^www\./', '', $value);
 
         return rtrim($value, '/');
+    }
+
+    public function checkCompany(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'company_identifier' => ['required', 'string', 'max:255'],
+        ]);
+
+        $companyIdentifier = $this->normalizeCompanyIdentifier(
+            $validated['company_identifier']
+        );
+
+        $company = $this->findCompany($companyIdentifier);
+
+        if (! $company) {
+            return response()->json([
+                'message' => 'No encontramos una empresa registrada con ese nombre.',
+                'errors' => [
+                    'company_identifier' => [
+                        'No encontramos una empresa registrada con ese nombre. Verifica que esté escrito correctamente.',
+                    ],
+                ],
+            ], 422);
+        }
+
+        return response()->json([
+            'valid' => true,
+        ]);
+    }
+    private function findCompany(string $companyIdentifier): ?Company
+    {
+        return Company::query()
+            ->whereRaw('TRIM(LOWER(slug)) = ?', [$companyIdentifier])
+            ->orWhereRaw('TRIM(LOWER(name)) = ?', [$companyIdentifier])
+            ->first();
     }
 }

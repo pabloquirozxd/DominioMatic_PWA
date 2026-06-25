@@ -2,6 +2,7 @@
 import GuestLayout from '@/Layouts/GuestLayout.vue';
 import InputError from '@/Components/InputError.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { ref } from 'vue';
 
 const form = useForm({
     name: '',
@@ -11,26 +12,75 @@ const form = useForm({
     password_confirmation: '',
 });
 
+const googleProcessing = ref(false);
+const googleError = ref('');
+
 const submit = () => {
     form.post(route('register'), {
         onFinish: () => form.reset('password', 'password_confirmation'),
     });
 };
 
-const continueWithGoogle = () => {
+const continueWithGoogle = async () => {
     const companyIdentifier = form.company_identifier.trim();
 
+    googleError.value = '';
+    form.clearErrors('company_identifier');
+
     if (!companyIdentifier) {
-        form.setError('company_identifier', 'Primero escribe el nombre de tu empresa para continuar con Google.');
+        const message = 'Primero escribe el nombre de tu empresa para continuar con Google.';
+
+        form.setError('company_identifier', message);
+        googleError.value = message;
+
         return;
     }
 
-    const params = new URLSearchParams({
-        mode: 'register',
-        company_identifier: companyIdentifier,
-    });
+    googleProcessing.value = true;
 
-    window.location.href = `${route('google.redirect')}?${params.toString()}`;
+    try {
+        const response = await fetch(route('google.company.check'), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document
+                    .querySelector('meta[name="csrf-token"]')
+                    ?.getAttribute('content') ?? '',
+            },
+            body: JSON.stringify({
+                company_identifier: companyIdentifier,
+            }),
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+            const message =
+                data.errors?.company_identifier?.[0] ??
+                data.message ??
+                'No pudimos validar la empresa. Verifica el nombre e intenta nuevamente.';
+
+            form.setError('company_identifier', message);
+            googleError.value = message;
+            googleProcessing.value = false;
+
+            return;
+        }
+
+        const params = new URLSearchParams({
+            mode: 'register',
+            company_identifier: companyIdentifier,
+        });
+
+        window.location.href = `${route('google.redirect')}?${params.toString()}`;
+    } catch (error) {
+        const message = 'No pudimos validar la empresa. Revisa tu conexión e intenta nuevamente.';
+
+        form.setError('company_identifier', message);
+        googleError.value = message;
+        googleProcessing.value = false;
+    }
 };
 </script>
 
@@ -172,6 +222,13 @@ const continueWithGoogle = () => {
             </button>
         </form>
 
+        <div
+            v-if="googleError"
+            class="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 dark:border-red-400/20 dark:bg-red-400/10 dark:text-red-300"
+        >
+            {{ googleError }}
+        </div>
+
         <div class="my-6 flex items-center gap-3">
             <div class="h-px flex-1 bg-gray-200 dark:bg-white/10"></div>
             <span class="text-xs font-medium uppercase tracking-wider text-gray-400">
@@ -183,7 +240,8 @@ const continueWithGoogle = () => {
         <button
             type="button"
             @click="continueWithGoogle"
-            class="flex w-full items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-800 shadow-sm transition hover:-translate-y-0.5 hover:bg-gray-50 dark:border-white/10 dark:bg-white/[0.06] dark:text-white dark:hover:bg-white/[0.09]"
+            :disabled="googleProcessing"
+            class="flex w-full items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-800 shadow-sm transition hover:-translate-y-0.5 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/[0.06] dark:text-white dark:hover:bg-white/[0.09]"
         >
             <svg class="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
                 <path fill="#4285F4" d="M21.805 10.023h-9.72v3.955h5.591c-.241 1.27-.972 2.347-2.071 3.068v2.548h3.354c1.964-1.808 3.096-4.47 3.096-7.624 0-.646-.058-1.27-.25-1.947z" />
@@ -192,7 +250,7 @@ const continueWithGoogle = () => {
                 <path fill="#EA4335" d="M12.085 5.56c1.525 0 2.894.524 3.973 1.553l2.977-2.977C17.24 2.463 14.888 1.5 12.085 1.5 8.03 1.5 4.52 3.83 2.812 7.21l3.463 2.626c.82-2.453 3.107-4.276 5.81-4.276z" />
             </svg>
 
-            Registrarme con Google
+            {{ googleProcessing ? 'Validando empresa...' : 'Registrarme con Google' }}
         </button>
 
         <div class="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
