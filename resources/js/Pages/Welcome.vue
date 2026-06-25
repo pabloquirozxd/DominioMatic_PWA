@@ -590,7 +590,18 @@
 
             <footer class="py-12 border-t border-gray-200 dark:border-white/10 bg-white dark:bg-[#0a0a0c] text-sm text-gray-500 dark:text-gray-400 transition-colors">
                 <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-                    <p>&copy; 2026 DominioMatic.com. Todos los derechos reservados.</p>
+                    <p>
+                        &copy; 2026
+                        <a
+                            href="https://dominiomatic.com"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="font-medium text-gray-300 transition hover:text-[#00b3ff] dark:text-gray-300"
+                        >
+                            DominioMatic.com
+                        </a>.
+                        Todos los derechos reservados.
+                    </p>
                     <div class="flex space-x-6">
                         <a href="#" class="hover:text-gray-900 dark:hover:text-white transition-colors">Términos de Servicio</a>
                         <a href="#" class="hover:text-gray-900 dark:hover:text-white transition-colors">Política de Privacidad</a>

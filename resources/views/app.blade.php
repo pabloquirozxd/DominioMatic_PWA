@@ -6,6 +6,11 @@
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 
+        <link rel="icon" type="image/png" href="{{ asset('images/favicon_dominiomatic.png') }}?v=1">
+        <link rel="shortcut icon" type="image/png" href="{{ asset('images/favicon_dominiomatic.png') }}?v=1">
+        <link rel="apple-touch-icon" href="{{ asset('images/favicon_dominiomatic.png') }}?v=1">
+        <meta name="theme-color" content="#020617">
+
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
