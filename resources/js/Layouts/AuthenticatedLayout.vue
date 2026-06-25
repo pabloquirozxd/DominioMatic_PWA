@@ -22,9 +22,6 @@ const showingNavigationDropdown = ref(false);
                             alt="DominioMatic"
                             class="h-8 w-auto"
                         />
-                        <span class="bg-gradient-to-r from-[#0066cc] via-[#c600bf] to-[#ff2d55] bg-clip-text font-semibold tracking-tight text-transparent">
-                            DominioMatic
-                        </span>
                     </Link>
 
                     <div class="hidden items-center gap-2 md:flex">
@@ -49,8 +46,20 @@ const showingNavigationDropdown = ref(false);
                         <Dropdown align="right" width="56">
                             <template #trigger>
                                 <button class="flex items-center gap-3 rounded-2xl border border-gray-200/60 bg-white/60 px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-white dark:border-white/10 dark:bg-[#111113]/40 dark:text-gray-200 dark:hover:bg-[#1c1c1f]/60">
-                                    <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#0066cc] via-[#c600bf] to-[#ff2d55] text-xs font-semibold text-white">
-                                        {{ $page.props.auth.user.name.charAt(0).toUpperCase() }}
+                                    <div
+                                        class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-fuchsia-500 to-blue-500 text-sm font-bold text-white shadow-lg shadow-fuchsia-500/20"
+                                    >
+                                        <img
+                                            v-if="$page.props.auth.user?.avatar"
+                                            :src="$page.props.auth.user.avatar"
+                                            :alt="$page.props.auth.user.name"
+                                            referrerpolicy="no-referrer"
+                                            class="h-full w-full object-cover"
+                                        />
+
+                                        <span v-else>
+                                            {{ $page.props.auth.user?.name?.charAt(0)?.toUpperCase() ?? 'U' }}
+                                        </span>
                                     </div>
                                     <span>
                                         {{ $page.props.auth.user.name }}
