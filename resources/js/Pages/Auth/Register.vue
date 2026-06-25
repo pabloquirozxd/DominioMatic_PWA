@@ -13,7 +13,6 @@ const form = useForm({
 });
 
 const googleProcessing = ref(false);
-const googleError = ref('');
 
 const submit = () => {
     form.post(route('register'), {
@@ -24,14 +23,13 @@ const submit = () => {
 const continueWithGoogle = async () => {
     const companyIdentifier = form.company_identifier.trim();
 
-    googleError.value = '';
     form.clearErrors('company_identifier');
 
     if (!companyIdentifier) {
-        const message = 'Primero escribe el nombre de tu empresa para continuar con Google.';
-
-        form.setError('company_identifier', message);
-        googleError.value = message;
+        form.setError(
+            'company_identifier',
+            'Primero escribe el nombre de tu empresa para continuar con Google.'
+        );
 
         return;
     }
@@ -39,46 +37,44 @@ const continueWithGoogle = async () => {
     googleProcessing.value = true;
 
     try {
-        const response = await fetch(route('google.company.check'), {
-            method: 'POST',
+        const checkParams = new URLSearchParams({
+            company_identifier: companyIdentifier,
+        });
+
+        const response = await fetch(`/auth/google/check-company?${checkParams.toString()}`, {
+            method: 'GET',
             headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': document
-                    .querySelector('meta[name="csrf-token"]')
-                    ?.getAttribute('content') ?? '',
+                Accept: 'application/json',
             },
-            body: JSON.stringify({
-                company_identifier: companyIdentifier,
-            }),
+            credentials: 'same-origin',
         });
 
         const data = await response.json().catch(() => ({}));
 
-        if (!response.ok) {
+        if (!response.ok || data.valid !== true) {
             const message =
                 data.errors?.company_identifier?.[0] ??
                 data.message ??
                 'No pudimos validar la empresa. Verifica el nombre e intenta nuevamente.';
 
             form.setError('company_identifier', message);
-            googleError.value = message;
             googleProcessing.value = false;
 
             return;
         }
 
-        const params = new URLSearchParams({
+        const redirectParams = new URLSearchParams({
             mode: 'register',
             company_identifier: companyIdentifier,
         });
 
-        window.location.href = `${route('google.redirect')}?${params.toString()}`;
+        window.location.href = `/auth/google/redirect?${redirectParams.toString()}`;
     } catch (error) {
-        const message = 'No pudimos validar la empresa. Revisa tu conexión e intenta nuevamente.';
+        form.setError(
+            'company_identifier',
+            'No pudimos validar la empresa. Revisa tu conexión e intenta nuevamente.'
+        );
 
-        form.setError('company_identifier', message);
-        googleError.value = message;
         googleProcessing.value = false;
     }
 };
@@ -221,13 +217,6 @@ const continueWithGoogle = async () => {
                 {{ form.processing ? 'Creando cuenta...' : 'Crear cuenta' }}
             </button>
         </form>
-
-        <div
-            v-if="googleError"
-            class="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 dark:border-red-400/20 dark:bg-red-400/10 dark:text-red-300"
-        >
-            {{ googleError }}
-        </div>
 
         <div class="my-6 flex items-center gap-3">
             <div class="h-px flex-1 bg-gray-200 dark:bg-white/10"></div>

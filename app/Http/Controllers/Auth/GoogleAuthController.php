@@ -10,7 +10,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Http\JsonResponse;
 use Throwable;
@@ -122,13 +121,20 @@ class GoogleAuthController extends Controller
 
     public function checkCompany(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'company_identifier' => ['required', 'string', 'max:255'],
-        ]);
-
         $companyIdentifier = $this->normalizeCompanyIdentifier(
-            $validated['company_identifier']
+            (string) $request->query('company_identifier', '')
         );
+
+        if ($companyIdentifier === '') {
+            return response()->json([
+                'message' => 'Primero escribe el nombre de tu empresa para continuar con Google.',
+                'errors' => [
+                    'company_identifier' => [
+                        'Primero escribe el nombre de tu empresa para continuar con Google.',
+                    ],
+                ],
+            ], 422);
+        }
 
         $company = $this->findCompany($companyIdentifier);
 
