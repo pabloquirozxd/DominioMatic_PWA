@@ -83,28 +83,53 @@ function deleteSubscription(id) {
 </script>
 
 <template>
-<Head title="Suscripciones | DominioMatic" />
+    <Head title="Suscripciones | DominioMatic" />
 
-<AuthenticatedLayout>
-    <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8 text-gray-900 dark:text-gray-100">
-        
-        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
-            <div>
-                <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-                    Suscripciones
-                </h1>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    Gestión de servicios contratados y ciclos de facturación.
-                </p>
+    <AuthenticatedLayout>
+        <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8 text-gray-900 dark:text-gray-100">
+            
+            <div class="ty-page-header">
+                <div class="ty-page-heading">
+                    <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+                        Suscripciones
+                    </h1>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        Gestión de servicios contratados y ciclos de facturación.
+                    </p>
+                </div>
+
+                <div class="ty-page-actions">
+                    <a
+                        href="/dashboard"
+                        class="ty-action-btn ty-action-dark"
+                    >
+                        Volver al dashboard
+                    </a>
+
+                    <button
+                        type="button"
+                        @click="openCreate"
+                        class="ty-action-btn ty-action-light"
+                    >
+                        Nueva suscripción
+                    </button>
+
+                    <a
+                        :href="route('reports.subscriptions.pdf')"
+                        target="_blank"
+                        class="ty-report-btn ty-report-pdf"
+                    >
+                        Exportar PDF
+                    </a>
+
+                    <a
+                        :href="route('reports.subscriptions.excel')"
+                        class="ty-report-btn ty-report-excel"
+                    >
+                        Exportar Excel
+                    </a>
+                </div>
             </div>
-
-            <button
-                @click="openCreate"
-                class="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-slate-800 dark:bg-white dark:text-black"
-            >
-                Nueva suscripción
-            </button>
-        </div>
 
         <div class="glass-card p-6">
             
@@ -162,19 +187,24 @@ function deleteSubscription(id) {
                                         {{ subscription.status }}
                                     </span>
                                 </td>
-                                <td class="px-4 py-4 text-right text-sm font-medium space-x-2">
-                                    <button
-                                        @click="openEdit(subscription)"
-                                        class="text-[#0066cc] hover:underline"
-                                    >
-                                        Editar
-                                    </button>
-                                    <button
-                                        @click="deleteSubscription(subscription.id)"
-                                        class="text-rose-600 hover:underline"
-                                    >
-                                        Eliminar
-                                    </button>
+                                <td class="px-4 py-3 text-right">
+                                    <div class="ty-row-actions">
+                                        <button
+                                            type="button"
+                                            @click="openEdit(subscription)"
+                                            class="ty-table-action-btn ty-table-edit"
+                                        >
+                                            Editar
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            @click="destroy(subscription)"
+                                            class="ty-table-action-btn ty-table-delete"
+                                        >
+                                            Eliminar
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                             <tr v-if="!filteredSubscriptions.length">

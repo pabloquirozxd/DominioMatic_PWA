@@ -120,35 +120,50 @@ function formatMoney(value) {
     <Head title="Productos | DominioMatic" />
 
     <AuthenticatedLayout>
-        <template #header>
-            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                    <h2 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-                        Productos
-                    </h2>
-                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        Servicios, dominios y recursos que administra tu empresa.
-                    </p>
-                </div>
+<template #header>
+    <div class="ty-page-header">
+        <div class="ty-page-heading">
+            <h2 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+                Productos
+            </h2>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Servicios, dominios y recursos que administra tu empresa.
+            </p>
+        </div>
 
-                <div class="flex gap-3">
-                    <Link
-                        :href="route('dashboard')"
-                        class="inline-flex items-center justify-center rounded-2xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-white/10 dark:bg-[#111113] dark:text-gray-200 dark:hover:bg-[#1c1c1f]"
-                    >
-                        Volver al dashboard
-                    </Link>
+        <div class="ty-page-actions">
+            <Link
+                :href="route('dashboard')"
+                class="ty-action-btn ty-action-dark"
+            >
+                Volver al dashboard
+            </Link>
 
-                    <button
-                        type="button"
-                        @click="openCreateModal"
-                        class="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-slate-800 dark:bg-white dark:text-black"
-                    >
-                        Nuevo producto
-                    </button>
-                </div>
-            </div>
-        </template>
+            <button
+                type="button"
+                @click="openCreateModal"
+                class="ty-action-btn ty-action-light"
+            >
+                Nuevo producto
+            </button>
+
+            <a
+                :href="route('reports.products.pdf')"
+                target="_blank"
+                class="ty-report-btn ty-report-pdf"
+            >
+                Exportar PDF
+            </a>
+
+            <a
+                :href="route('reports.products.excel')"
+                class="ty-report-btn ty-report-excel"
+            >
+                Exportar Excel
+            </a>
+        </div>
+    </div>
+</template>
 
         <div class="py-10 text-gray-900 transition-colors duration-300 dark:text-gray-100">
             <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -248,20 +263,20 @@ function formatMoney(value) {
                                             {{ product.description || '—' }}
                                         </td>
 
-                                        <td class="px-4 py-4">
-                                            <div class="flex gap-2">
+                                        <td class="px-4 py-3 text-right">
+                                            <div class="ty-row-actions">
                                                 <button
                                                     type="button"
                                                     @click="openEditModal(product)"
-                                                    class="rounded-2xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-white/10 dark:text-gray-200 dark:hover:bg-[#1c1c1f]"
+                                                    class="ty-table-action-btn ty-table-edit"
                                                 >
                                                     Editar
                                                 </button>
 
                                                 <button
                                                     type="button"
-                                                    @click="removeProduct(product.id)"
-                                                    class="rounded-2xl border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-50 dark:border-rose-500/20 dark:text-rose-300 dark:hover:bg-rose-500/10"
+                                                    @click="deleteProduct(product)"
+                                                    class="ty-table-action-btn ty-table-delete"
                                                 >
                                                     Eliminar
                                                 </button>

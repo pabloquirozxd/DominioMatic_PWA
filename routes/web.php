@@ -5,6 +5,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\ReportController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -36,6 +37,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Contactos
     Route::get('/contacts', [ContactController::class, 'index'])->name('contacts.index');
     Route::post('/contacts', [ContactController::class, 'store'])->name('contacts.store');
+    Route::put('/contacts/{contact}', [ContactController::class, 'update'])->name('contacts.update');
+    Route::delete('/contacts/{contact}', [ContactController::class, 'destroy'])->name('contacts.destroy');
 
     // Productos
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
@@ -49,7 +52,30 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/subscriptions', [SubscriptionController::class, 'store'])->name('subscriptions.store');
     Route::put('/subscriptions/{subscription}', [SubscriptionController::class, 'update'])->name('subscriptions.update');
     Route::delete('/subscriptions/{subscription}', [SubscriptionController::class, 'destroy'])->name('subscriptions.destroy');
+
+    // Reportes - Contactos
+    Route::get('/reports/contacts/pdf', [ReportController::class, 'contactsPdf'])
+        ->name('reports.contacts.pdf');
+
+    Route::get('/reports/contacts/excel', [ReportController::class, 'contactsExcel'])
+        ->name('reports.contacts.excel');
+
+    // Reportes - Productos
+    Route::get('/reports/products/pdf', [ReportController::class, 'productsPdf'])
+        ->name('reports.products.pdf');
+
+    Route::get('/reports/products/excel', [ReportController::class, 'productsExcel'])
+        ->name('reports.products.excel');
+
+    // Reportes - Suscripciones
+    Route::get('/reports/subscriptions/pdf', [ReportController::class, 'subscriptionsPdf'])
+        ->name('reports.subscriptions.pdf');
+
+    Route::get('/reports/subscriptions/excel', [ReportController::class, 'subscriptionsExcel'])
+        ->name('reports.subscriptions.excel');
 });
+
+
 
 // Ruta temporal para probar el diseño
 Route::get('/test-apple', function () {
