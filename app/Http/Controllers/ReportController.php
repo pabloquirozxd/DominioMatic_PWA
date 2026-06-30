@@ -30,14 +30,14 @@ class ReportController extends Controller
             'generatedAt' => now(),
         ])->setPaper('a4', 'landscape');
 
-        return $pdf->download('reporte-contactos.pdf');
+        return $pdf->download($this->reportFilename('contactos', 'pdf'));
     }
 
     public function contactsExcel(Request $request)
     {
         return Excel::download(
             new ContactsExport($request->user()),
-            'reporte-contactos.xlsx'
+            $this->reportFilename('contactos', 'xlsx')
         );
     }
 
@@ -57,14 +57,14 @@ class ReportController extends Controller
             'generatedAt' => now(),
         ])->setPaper('a4', 'landscape');
 
-        return $pdf->download('reporte-productos.pdf');
+        return $pdf->download($this->reportFilename('productos', 'pdf'));
     }
 
     public function productsExcel(Request $request)
     {
         return Excel::download(
             new ProductsExport($request->user()),
-            'reporte-productos.xlsx'
+            $this->reportFilename('productos', 'xlsx')
         );
     }
 
@@ -85,14 +85,21 @@ class ReportController extends Controller
             'generatedAt' => now(),
         ])->setPaper('a4', 'landscape');
 
-        return $pdf->download('reporte-suscripciones.pdf');
+        return $pdf->download($this->reportFilename('suscripciones', 'pdf'));
     }
 
     public function subscriptionsExcel(Request $request)
     {
         return Excel::download(
             new SubscriptionsExport($request->user()),
-            'reporte-suscripciones.xlsx'
+            $this->reportFilename('suscripciones', 'xlsx')
         );
+    }
+
+    private function reportFilename(string $module, string $extension): string
+    {
+        $timestamp = now()->format('Y-m-d_H-i-s');
+
+        return "reporte-{$module}-{$timestamp}.{$extension}";
     }
 }
