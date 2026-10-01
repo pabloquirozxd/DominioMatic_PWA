@@ -174,10 +174,14 @@ class DemoDataSeeder extends Seeder
 
         AccessRequest::updateOrCreate(
             [
-                'user_id' => $juan->id,
                 'company_id' => $company->id,
+                'email' => $juan->email,
             ],
             [
+                'uuid' => (string) \Illuminate\Support\Str::uuid(),
+                'user_id' => $juan->id,
+                'name' => $juan->name,
+                'password' => $juan->password,
                 'message' => 'Hola, me gustaría ingresar para revisar los servicios de hosting.',
                 'status' => 'pending',
                 'requested_at' => now(),
