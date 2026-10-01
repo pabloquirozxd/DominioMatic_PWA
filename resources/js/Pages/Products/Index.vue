@@ -1,411 +1,282 @@
+<!-- resources/js/Pages/Products/Index.vue -->
 <script setup>
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import PrimaryButton from '@/Components/UI/Buttons/PrimaryButton.vue'
+import SecondaryButton from '@/Components/UI/Buttons/SecondaryButton.vue'
+import GlassDropdown from '@/Components/UI/GlassDropdown.vue'
+
+import ProductStats from './Components/ProductStats.vue'
+import ProductTable from './Components/ProductTable.vue'
+import ProductFormModal from './Components/ProductFormModal.vue'
+import ProductImportModal from './Components/ProductImportModal.vue'
+import ProductDetailModal from './Components/ProductDetailModal.vue'
+
+import { Head, router } from '@inertiajs/vue3'
+import { computed, ref } from 'vue'
+
+import {
+    PlusIcon,
+    MagnifyingGlassIcon,
+    DocumentArrowDownIcon,
+    TableCellsIcon,
+    ArrowUpTrayIcon,
+    ChevronDownIcon,
+} from '@heroicons/vue/24/outline'
+
+defineOptions({
+    layout: AuthenticatedLayout,
+});
 
 const props = defineProps({
     products: {
         type: Array,
         default: () => [],
     },
-});
+})
 
-const search = ref('');
-const showModal = ref(false);
-const editingId = ref(null);
+const search = ref('')
+const showModal = ref(false)
+const showImportModal = ref(false)
+const showDetailModal = ref(false)
+const editingProduct = ref(null)
+const selectedProduct = ref(null)
 
-const form = useForm({
-    name: '',
-    description: '',
-    price_list: '',
-    is_infinite: true,
-    stock: 0,
-});
+function isService(item) {
+    if (item.type) return item.type === 'service'
+    return Boolean(item.is_infinite)
+}
 
 const filteredProducts = computed(() => {
-    const q = search.value.trim().toLowerCase();
-
-    if (!q) return props.products;
+    const q = search.value.trim().toLowerCase()
+    if (!q) return props.products
 
     return props.products.filter((product) => {
+        const itemType = isService(product) ? 'servicio' : 'producto'
+        const stockText = isService(product)
+            ? 'servicio'
+            : product.is_infinite
+              ? 'stock ilimitado'
+              : `stock ${product.stock}`
+
         return [
             product.name,
             product.description,
-            product.is_infinite ? 'ilimitado' : `stock ${product.stock}`,
+            itemType,
+            stockText,
+            product.price_list,
+            product.currency,
         ]
             .filter(Boolean)
-            .some((value) => String(value).toLowerCase().includes(q));
-    });
-});
+            .some((val) => String(val).toLowerCase().includes(q))
+    })
+})
 
 const stats = computed(() => {
-    const total = props.products.length;
-    const infinite = props.products.filter((p) => Boolean(p.is_infinite)).length;
-    const finite = total - infinite;
+    const total = props.products.length
+    const services = props.products.filter((p) => isService(p)).length
+    const products = total - services
 
-    return { total, infinite, finite };
-});
+    return { total, services, products }
+})
 
 function openCreateModal() {
-    editingId.value = null;
-    form.reset();
-    form.clearErrors();
-    form.is_infinite = true;
-    form.stock = 0;
-    showModal.value = true;
+    editingProduct.value = null
+    showModal.value = true
 }
 
 function openEditModal(product) {
-    editingId.value = product.id;
-    form.name = product.name ?? '';
-    form.description = product.description ?? '';
-    form.price_list = product.price_list ?? '';
-    form.is_infinite = Boolean(product.is_infinite);
-    form.stock = product.stock ?? 0;
-    form.clearErrors();
-    showModal.value = true;
+    editingProduct.value = product
+    showModal.value = true
 }
 
-function closeModal() {
-    showModal.value = false;
-    editingId.value = null;
-    form.reset();
-    form.clearErrors();
-    form.is_infinite = true;
-    form.stock = 0;
+function openDetailModal(product) {
+    selectedProduct.value = product
+    showDetailModal.value = true
 }
 
-function submit() {
-    const payload = {
-        name: form.name,
-        description: form.description,
-        price_list: form.price_list,
-        is_infinite: form.is_infinite,
-        stock: form.is_infinite ? 0 : form.stock,
-    };
-
-    if (editingId.value) {
-        form.transform(() => payload).put(route('products.update', editingId.value), {
-            preserveScroll: true,
-            onSuccess: () => closeModal(),
-        });
-        return;
-    }
-
-    form.transform(() => payload).post(route('products.store'), {
-        preserveScroll: true,
-        onSuccess: () => closeModal(),
-    });
+function closeDetailModal() {
+    showDetailModal.value = false
+    selectedProduct.value = null
 }
 
 function removeProduct(id) {
-    if (!confirm('¿Eliminar este producto?')) return;
+    if (!confirm('¿Desea eliminar este registro del catálogo?')) return
 
     router.delete(route('products.destroy', id), {
         preserveScroll: true,
-    });
-}
-
-function formatMoney(value) {
-    const number = Number(value || 0);
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        maximumFractionDigits: 2,
-    }).format(number);
+    })
 }
 </script>
 
 <template>
-    <Head title="Productos | DominioMatic" />
+    <Head title="Catálogo de Productos & Servicios | DominioMatic" />
 
-    <AuthenticatedLayout>
-<template #header>
-    <div class="ty-page-header">
-        <div class="ty-page-heading">
-            <h2 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-                Productos
-            </h2>
-            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Servicios, dominios y recursos que administra tu empresa.
-            </p>
-        </div>
+    <div
+        class="min-h-screen overflow-x-hidden bg-[#f5f5f7] text-slate-950 transition-colors dark:bg-[#050507] dark:text-white"
+    >
+        <!-- AMBIENT BACKGROUND -->
+        <div
+            class="pointer-events-none fixed inset-0 overflow-hidden"
+            aria-hidden="true"
+        >
+            <div
+                class="absolute -bottom-56 -left-56 h-[44rem] w-[44rem] rounded-full opacity-[0.14] blur-[130px] dark:opacity-[0.24]"
+                style="background: radial-gradient(circle, #002B48 0%, transparent 70%)"
+            ></div>
 
-        <div class="ty-page-actions">
-            <Link
-                :href="route('dashboard')"
-                class="ty-action-btn ty-action-dark"
-            >
-                Volver al dashboard
-            </Link>
+            <div
+                class="absolute -right-48 -top-48 h-[42rem] w-[42rem] rounded-full opacity-[0.16] blur-[130px] dark:opacity-[0.26]"
+                style="background: radial-gradient(circle, #0072A8 0%, transparent 70%)"
+            ></div>
 
-            <button
-                type="button"
-                @click="openCreateModal"
-                class="ty-action-btn ty-action-light"
-            >
-                Nuevo producto
-            </button>
+            <div
+                class="absolute -left-40 top-[18%] h-[38rem] w-[38rem] rounded-full opacity-[0.12] blur-[120px] dark:opacity-[0.20]"
+                style="background: radial-gradient(circle, #21B24B 0%, transparent 70%)"
+            ></div>
 
-            <a
-                :href="route('reports.products.pdf')"
-                target="_blank"
-                class="ty-report-btn ty-report-pdf"
-            >
-                Exportar PDF
-            </a>
+            <div
+                class="absolute -right-40 bottom-[8%] h-[40rem] w-[40rem] rounded-full opacity-[0.10] blur-[130px] dark:opacity-[0.18]"
+                style="background: radial-gradient(circle, #005E2B 0%, transparent 70%)"
+            ></div>
 
-            <a
-                :href="route('reports.products.excel')"
-                class="ty-report-btn ty-report-excel"
-            >
-                Exportar Excel
-            </a>
-        </div>
-    </div>
-</template>
-
-        <div class="py-10 text-gray-900 transition-colors duration-300 dark:text-gray-100">
-            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                
-                <div class="grid gap-4 md:grid-cols-3">
-                    <div class="glass-card p-6">
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Total productos</p>
-                        <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{{ stats.total }}</p>
-                    </div>
-
-                    <div class="glass-card p-6">
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Servicios ilimitados</p>
-                        <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{{ stats.infinite }}</p>
-                    </div>
-
-                    <div class="glass-card p-6">
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Productos con stock</p>
-                        <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{{ stats.finite }}</p>
-                    </div>
-                </div>
-
-                <div class="mt-8 glass-card p-6">
-                    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                        <div>
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Listado de productos</h3>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Registros reales de tus productos.</p>
-                        </div>
-
-                        <div class="w-full md:w-80">
-                            <input
-                                v-model="search"
-                                type="text"
-                                placeholder="Buscar producto..."
-                                class="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-[#0066cc] dark:border-white/10 dark:bg-[#1c1c1f] dark:text-gray-100 dark:placeholder:text-gray-500"
-                            />
-                        </div>
-                    </div>
-
-                    <div class="mt-6 overflow-hidden rounded-2xl border border-gray-100 dark:border-white/10">
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-100 dark:divide-white/10">
-                                <thead class="bg-gray-50 dark:bg-[#1c1c1f]">
-                                    <tr>
-                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                            Nombre
-                                        </th>
-                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                            Precio
-                                        </th>
-                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                            Inventario
-                                        </th>
-                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                            Descripción
-                                        </th>
-                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                            Acciones
-                                        </th>
-                                    </tr>
-                                </thead>
-
-                                <tbody class="divide-y divide-gray-100 bg-white dark:divide-white/10 dark:bg-transparent">
-                                    <tr
-                                        v-for="product in filteredProducts"
-                                        :key="product.id"
-                                        class="hover:bg-gray-50/80 dark:hover:bg-[#1c1c1f] transition-colors"
-                                    >
-                                        <td class="px-4 py-4">
-                                            <div class="font-medium text-gray-900 dark:text-white">
-                                                {{ product.name }}
-                                            </div>
-                                            <div class="text-xs text-gray-400 dark:text-gray-500">
-                                                ID {{ product.id }}
-                                            </div>
-                                        </td>
-
-                                        <td class="px-4 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                                            {{ formatMoney(product.price_list) }}
-                                        </td>
-
-                                        <td class="px-4 py-4 text-sm text-gray-600 dark:text-gray-300">
-                                            <span
-                                                v-if="product.is_infinite"
-                                                class="inline-flex rounded-full bg-cyan-100 px-3 py-1 text-xs font-semibold text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300"
-                                            >
-                                                Ilimitado
-                                            </span>
-                                            <span
-                                                v-else
-                                                class="inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700 dark:bg-white/10 dark:text-gray-200"
-                                            >
-                                                Stock: {{ product.stock }}
-                                            </span>
-                                        </td>
-
-                                        <td class="px-4 py-4 text-sm text-gray-500 dark:text-gray-400">
-                                            {{ product.description || '—' }}
-                                        </td>
-
-                                        <td class="px-4 py-3 text-right">
-                                            <div class="ty-row-actions">
-                                                <button
-                                                    type="button"
-                                                    @click="openEditModal(product)"
-                                                    class="ty-table-action-btn ty-table-edit"
-                                                >
-                                                    Editar
-                                                </button>
-
-                                                <button
-                                                    type="button"
-                                                    @click="deleteProduct(product)"
-                                                    class="ty-table-action-btn ty-table-delete"
-                                                >
-                                                    Eliminar
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-
-                                    <tr v-if="filteredProducts.length === 0">
-                                        <td colspan="5" class="px-4 py-14 text-center text-sm text-gray-500 dark:text-gray-400">
-                                            No hay productos registrados.
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <div
+                class="absolute left-1/2 top-1/3 h-[36rem] w-[36rem] -translate-x-1/2 rounded-full opacity-[0.55] blur-[140px] dark:opacity-[0.06]"
+                style="background: radial-gradient(circle, #FFFFFF 0%, transparent 65%)"
+            ></div>
         </div>
 
         <div
-            v-if="showModal"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+            class="relative mx-auto max-w-[1480px] px-4 pb-20 pt-5 sm:px-6 lg:px-8"
         >
-            <div class="glass-card w-full max-w-2xl p-6 shadow-2xl">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <h3 class="text-2xl font-bold text-gray-900 dark:text-white">
-                            {{ editingId ? 'Editar producto' : 'Nuevo producto' }}
-                        </h3>
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                            Registra servicios y recursos administrados por DominioMatic.
-                        </p>
+            <!-- HEADER -->
+            <header
+                class="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between"
+            >
+                <div>
+                    <div class="flex items-center gap-3">
+                        <h1
+                            class="text-3xl font-semibold tracking-[-0.045em] text-slate-950 sm:text-4xl dark:text-white"
+                        >
+                            Catálogo & Inventario
+                        </h1>
                     </div>
 
-                    <button
-                        type="button"
-                        class="text-gray-400 transition hover:text-gray-700 dark:hover:text-gray-200"
-                        @click="closeModal"
+                    <p
+                        class="mt-2 max-w-xl text-sm text-slate-500 dark:text-slate-400"
                     >
-                        ✕
-                    </button>
+                        Gestión centralizada de servicios digitales e
+                        inventario de productos físicos.
+                    </p>
                 </div>
 
-                <form class="mt-6 grid gap-4 md:grid-cols-2" @submit.prevent="submit">
-                    <div class="md:col-span-2">
-                        <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Nombre</label>
+                <div
+                    class="flex flex-wrap items-center gap-2 sm:gap-3"
+                >
+                    <GlassDropdown align="right" width="w-48">
+                        <template #trigger="{ isOpen }">
+                            <SecondaryButton>
+                                <DocumentArrowDownIcon
+                                    class="h-4 w-4 stroke-[2.2]"
+                                />
+                                <span>Exportar</span>
+                                <ChevronDownIcon
+                                    class="h-3.5 w-3.5 opacity-60 transition-transform duration-300"
+                                    :class="{
+                                        'rotate-180': isOpen,
+                                    }"
+                                />
+                            </SecondaryButton>
+                        </template>
+
+                        <template #content>
+                            <a
+                                :href="route('reports.products.pdf')"
+                                target="_blank"
+                                class="group flex items-center gap-2.5 rounded-2xl px-3.5 py-2.5 text-xs font-semibold text-slate-700 transition-all duration-200 hover:bg-[#0072A8] hover:text-white dark:text-slate-200"
+                            >
+                                <DocumentArrowDownIcon
+                                    class="h-4 w-4 text-rose-500 transition-colors group-hover:text-white"
+                                />
+                                <span>Reporte en PDF</span>
+                            </a>
+
+                            <a
+                                :href="route('reports.products.excel')"
+                                class="group flex items-center gap-2.5 rounded-2xl px-3.5 py-2.5 text-xs font-semibold text-slate-700 transition-all duration-200 hover:bg-[#0072A8] hover:text-white dark:text-slate-200"
+                            >
+                                <TableCellsIcon
+                                    class="h-4 w-4 text-emerald-500 transition-colors group-hover:text-white"
+                                />
+                                <span>Exportar a Excel</span>
+                            </a>
+                        </template>
+                    </GlassDropdown>
+
+                    <SecondaryButton @click="showImportModal = true">
+                        <ArrowUpTrayIcon
+                            class="h-4 w-4 stroke-[2.2]"
+                        />
+                        <span>Importar</span>
+                    </SecondaryButton>
+
+                    <PrimaryButton @click="openCreateModal">
+                        <PlusIcon class="h-4 w-4 stroke-[2.5]" />
+                        <span>Nuevo ítem</span>
+                    </PrimaryButton>
+                </div>
+            </header>
+
+            <!-- STATS -->
+            <ProductStats :stats="stats" class="mb-8" />
+
+            <!-- SEARCH + TABLE (single container, matching Contacts) -->
+            <div
+                class="rounded-[28px] border border-white/65 bg-white/35 p-2 shadow-[0_22px_70px_rgba(15,23,42,0.06),inset_0_1px_2px_rgba(255,255,255,0.85),inset_0_-2px_5px_rgba(0,0,0,0.06)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#101014]/65 dark:shadow-[0_22px_70px_rgba(0,0,0,0.28),inset_0_1px_2px_rgba(255,255,255,0.16),inset_0_-2px_6px_rgba(0,0,0,0.5)] sm:p-3"
+            >
+                <!-- Search field inside the container -->
+                <div
+                    class="mb-3 rounded-[20px] border border-white/60 bg-white/45 p-1.5 dark:border-white/[0.08] dark:bg-white/[0.03]"
+                >
+                    <div class="relative flex items-center">
+                        <MagnifyingGlassIcon
+                            class="absolute left-4 h-4 w-4 text-slate-400 dark:text-slate-500"
+                        />
+
                         <input
-                            v-model="form.name"
+                            v-model="search"
                             type="text"
-                            class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-[#0066cc] dark:border-white/10 dark:bg-[#1c1c1f] dark:text-white"
+                            placeholder="Buscar por nombre, tipo, descripción..."
+                            class="w-full rounded-[16px] border-0 bg-transparent py-2.5 pl-10 pr-4 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:bg-white/50 focus:ring-2 focus:ring-[#0072A8] dark:bg-transparent dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-black/20 dark:focus:ring-[#0072A8]"
                         />
-                        <p v-if="form.errors.name" class="mt-1 text-sm text-red-600">
-                            {{ form.errors.name }}
-                        </p>
                     </div>
+                </div>
 
-                    <div class="md:col-span-2">
-                        <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Descripción</label>
-                        <textarea
-                            v-model="form.description"
-                            rows="4"
-                            class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-[#0066cc] dark:border-white/10 dark:bg-[#1c1c1f] dark:text-white"
-                        ></textarea>
-                        <p v-if="form.errors.description" class="mt-1 text-sm text-red-600">
-                            {{ form.errors.description }}
-                        </p>
-                    </div>
-
-                    <div>
-                        <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Precio de lista</label>
-                        <input
-                            v-model="form.price_list"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-[#0066cc] dark:border-white/10 dark:bg-[#1c1c1f] dark:text-white"
-                        />
-                        <p v-if="form.errors.price_list" class="mt-1 text-sm text-red-600">
-                            {{ form.errors.price_list }}
-                        </p>
-                    </div>
-
-                    <div>
-                        <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Inventario</label>
-                        <select
-                            v-model="form.is_infinite"
-                            class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-[#0066cc] dark:border-white/10 dark:bg-[#1c1c1f] dark:text-white"
-                        >
-                            <option :value="true">Ilimitado</option>
-                            <option :value="false">Con stock</option>
-                        </select>
-                        <p v-if="form.errors.is_infinite" class="mt-1 text-sm text-red-600">
-                            {{ form.errors.is_infinite }}
-                        </p>
-                    </div>
-
-                    <div v-if="!form.is_infinite">
-                        <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Stock</label>
-                        <input
-                            v-model="form.stock"
-                            type="number"
-                            min="0"
-                            class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-[#0066cc] dark:border-white/10 dark:bg-[#1c1c1f] dark:text-white"
-                        />
-                        <p v-if="form.errors.stock" class="mt-1 text-sm text-red-600">
-                            {{ form.errors.stock }}
-                        </p>
-                    </div>
-
-                    <div class="md:col-span-2 mt-2 flex justify-end gap-3">
-                        <button
-                            type="button"
-                            class="rounded-2xl border border-gray-200 px-5 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-white/10 dark:text-gray-200 dark:hover:bg-[#1c1c1f]"
-                            @click="closeModal"
-                        >
-                            Cancelar
-                        </button>
-
-                        <button
-                            type="submit"
-                            :disabled="form.processing"
-                            class="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-black"
-                        >
-                            Guardar producto
-                        </button>
-                    </div>
-                </form>
+                <!-- Table -->
+                <ProductTable
+                    :products="filteredProducts"
+                    @edit="openEditModal"
+                    @delete="removeProduct"
+                    @view-detail="openDetailModal"
+                />
             </div>
         </div>
-    </AuthenticatedLayout>
+    </div>
+
+    <!-- MODALES -->
+    <ProductFormModal
+        :show="showModal"
+        :editing-product="editingProduct"
+        @close="showModal = false"
+    />
+
+    <ProductImportModal
+        :show="showImportModal"
+        @close="showImportModal = false"
+    />
+
+    <ProductDetailModal
+        :show="showDetailModal"
+        :product="selectedProduct"
+        @close="closeDetailModal"
+    />
 </template>

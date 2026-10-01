@@ -15,13 +15,14 @@ return new class extends Migration
         $table->id();
         $table->foreignId('company_id')->constrained()->onDelete('cascade');
 
-        $table->string('name'); // Ej: "Hosting Corporativo Plan A" o "Dominio .bo"
+        $table->string('type')->default('service'); // 'service' o 'product'
+        $table->string('name');
         $table->text('description')->nullable();
-        $table->decimal('price_list', 10, 2); // Precio de lista base
+        $table->decimal('price_list', 10, 2);
 
         // Control Híbrido de Inventario
-        $table->boolean('is_infinite')->default(true); // true = Hosting/Cloud, false = Finito/Hardware
-        $table->integer('stock')->default(0); // Solo aplica si is_infinite es false
+        $table->boolean('is_infinite')->default(true);
+        $table->integer('stock')->default(0);
 
         $table->timestamps();
     });

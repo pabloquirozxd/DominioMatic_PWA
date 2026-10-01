@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\ClientsExport; // <-- Importante
 use App\Exports\ContactsExport;
 use App\Exports\ProductsExport;
 use App\Exports\SubscriptionsExport;
+use App\Models\Client; // <-- Importante
 use App\Models\Contact;
 use App\Models\Product;
 use App\Models\Subscription;
@@ -93,6 +95,41 @@ class ReportController extends Controller
         return Excel::download(
             new SubscriptionsExport($request->user()),
             $this->reportFilename('suscripciones', 'xlsx')
+        );
+    }
+
+    // ==========================================
+    // Módulo de Clientes
+    // ==========================================
+
+    public function clientsPdf(Request $request)
+    {
+        $user = $request->user()->load('company');
+
+        // Cargamos los contactos ordenando para que el principal esté siempre arriba
+        $clients = Client::query()
+            ->where('company_id', $user->company_id)
+            ->with(['contacts' => function ($query) {
+                $query->orderBy('is_primary', 'desc')->orderBy('created_at', 'asc');
+            }]) 
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $pdf = Pdf::loadView('reports.clients-pdf', [
+            'company' => $user->company,
+            'user' => $user,
+            'clients' => $clients,
+            'generatedAt' => now(),
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download($this->reportFilename('clientes', 'pdf'));
+    }
+
+    public function clientsExcel(Request $request)
+    {
+        return Excel::download(
+            new ClientsExport($request->user()),
+            $this->reportFilename('clientes', 'xlsx')
         );
     }
 

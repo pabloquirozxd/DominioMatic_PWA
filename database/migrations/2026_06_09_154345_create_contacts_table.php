@@ -6,33 +6,26 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
-{
-    Schema::create('contacts', function (Blueprint $table) {
-        $table->id();
-        // Aislamiento SaaS: El contacto pertenece a un inquilino (Company)
-        $table->foreignId('company_id')->constrained()->onDelete('cascade');
+    {
+        Schema::create('contacts', function (Blueprint $table) {
+            $table->id();
 
-        // Datos del contacto empresarial
-        $table->string('first_name');
-        $table->string('last_name');
-        $table->string('email')->nullable();
-        $table->string('phone')->nullable();
+            // Tenant (Empresa proveedora del SaaS)
+            $table->foreignId('company_id')
+                ->constrained()
+                ->cascadeOnDelete();
 
-        // Relaciones pivote
-        $table->enum('type', ['primary', 'secondary'])->default('secondary');
-        $table->string('position')->nullable(); // Ej: "Gerente de Sistemas"
+            // Datos Personales
+            $table->string('first_name');
+            $table->string('last_name')->nullable();
+            $table->string('email')->nullable();
+            $table->string('phone')->nullable();
 
-        $table->timestamps();
-    });
-}
+            $table->timestamps();
+        });
+    }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('contacts');

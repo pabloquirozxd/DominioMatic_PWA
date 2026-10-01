@@ -7,7 +7,7 @@ import { ref } from 'vue';
 const form = useForm({
     name: '',
     email: '',
-    company_identifier: '',
+    company_name: '',
     password: '',
     password_confirmation: '',
 });
@@ -21,13 +21,13 @@ const submit = () => {
 };
 
 const continueWithGoogle = async () => {
-    const companyIdentifier = form.company_identifier.trim();
+    const companyName = form.company_name.trim();
 
-    form.clearErrors('company_identifier');
+    form.clearErrors('company_name');
 
-    if (!companyIdentifier) {
+    if (!companyName) {
         form.setError(
-            'company_identifier',
+            'company_name',
             'Primero escribe el nombre de tu empresa para continuar con Google.'
         );
 
@@ -38,7 +38,7 @@ const continueWithGoogle = async () => {
 
     try {
         const checkParams = new URLSearchParams({
-            company_identifier: companyIdentifier,
+            company_name: companyName,
         });
 
         const response = await fetch(`/auth/google/check-company?${checkParams.toString()}`, {
@@ -53,11 +53,11 @@ const continueWithGoogle = async () => {
 
         if (!response.ok || data.valid !== true) {
             const message =
-                data.errors?.company_identifier?.[0] ??
+                data.errors?.company_name?.[0] ??
                 data.message ??
-                'No pudimos validar la empresa. Verifica el nombre e intenta nuevamente.';
+                'No pudimos procesar la empresa. Verifica el nombre e intenta nuevamente.';
 
-            form.setError('company_identifier', message);
+            form.setError('company_name', message);
             googleProcessing.value = false;
 
             return;
@@ -65,13 +65,13 @@ const continueWithGoogle = async () => {
 
         const redirectParams = new URLSearchParams({
             mode: 'register',
-            company_identifier: companyIdentifier,
+            company_name: companyName,
         });
 
         window.location.href = `/auth/google/redirect?${redirectParams.toString()}`;
     } catch (error) {
         form.setError(
-            'company_identifier',
+            'company_name',
             'No pudimos validar la empresa. Revisa tu conexión e intenta nuevamente.'
         );
 
@@ -94,7 +94,7 @@ const continueWithGoogle = async () => {
             </h1>
 
             <p class="mt-2 text-sm leading-6 text-gray-500 dark:text-gray-400">
-                Regístrate con tu empresa para acceder al panel de clientes, productos y suscripciones.
+                Registra tu empresa y crea tu usuario para acceder al panel de clientes, productos y suscripciones.
             </p>
         </div>
 
@@ -144,27 +144,27 @@ const continueWithGoogle = async () => {
 
             <div>
                 <label
-                    for="company_identifier"
+                    for="company_name"
                     class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400"
                 >
-                    Empresa
+                    Nombre de tu Empresa
                 </label>
 
                 <input
-                    id="company_identifier"
-                    v-model="form.company_identifier"
+                    id="company_name"
+                    v-model="form.company_name"
                     type="text"
                     required
                     autocomplete="organization"
-                    placeholder="Ej: DominioMatic.com"
+                    placeholder="Ej: DominioMatic"
                     class="block w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm outline-none transition placeholder:text-gray-400 focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 dark:border-white/10 dark:bg-[#1c1c1f] dark:text-white dark:placeholder:text-gray-500 dark:focus:border-[#7ab7ff] dark:focus:ring-[#7ab7ff]/10"
                 />
 
                 <p class="mt-2 text-xs leading-5 text-gray-500 dark:text-gray-400">
-                    Escribe el nombre exacto de la empresa registrada.
+                    Este nombre identificará a tu organización en la plataforma.
                 </p>
 
-                <InputError class="mt-2" :message="form.errors.company_identifier" />
+                <InputError class="mt-2" :message="form.errors.company_name" />
             </div>
 
             <div>

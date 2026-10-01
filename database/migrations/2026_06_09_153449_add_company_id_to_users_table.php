@@ -10,7 +10,6 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->foreignId('company_id')->after('id')->nullable()->constrained()->onDelete('cascade');
-            $table->enum('role', ['admin', 'staff'])->default('staff')->after('password');
         });
     }
 
@@ -18,7 +17,7 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->dropForeign(['company_id']);
-            $table->dropColumn(['company_id', 'role']);
+            $table->dropColumn(['company_id']);
         });
     }
 };

@@ -3,27 +3,51 @@
 namespace App\Traits;
 
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Auth;
 
 trait Tenantable
 {
     /**
-     * El método bootTrait se ejecuta automáticamente cuando el modelo se inicializa.
+     * Filtra automáticamente los registros por la empresa activa.
      */
     protected static function bootTenantable(): void
     {
-        // 1. Candado de Lectura: Si hay un usuario logueado, solo ve los datos de su empresa
-        if (Auth::check() && Auth::user()->company_id) {
-            static::addGlobalScope('company_scope', function (Builder $builder) {
-                $builder->where('company_id', Auth::user()->company_id);
-            });
-        }
+        static::addGlobalScope('company_scope', function (Builder $builder) {
+            $companyId = static::getTenantCompanyId();
 
-        // 2. Automatización de Escritura: Al crear un registro, se le asigna su company_id de forma invisible
-        static::creating(function ($model) {
-            if (Auth::check() && Auth::user()->company_id) {
-                $model->company_id = Auth::user()->company_id;
+            if ($companyId) {
+                $builder->where(
+                    $builder->getModel()->getTable() . '.company_id',
+                    $companyId
+                );
             }
         });
+
+        /**
+         * Al crear un registro, asignamos automáticamente la empresa activa.
+         */
+        static::creating(function ($model) {
+            if (empty($model->company_id)) {
+                $model->company_id = static::getTenantCompanyId();
+            }
+        });
+    }
+
+    /**
+     * Obtiene de forma robusta el ID de la empresa activa del entorno actual.
+     */
+    protected static function getTenantCompanyId(): ?int
+    {
+        // 1. Prioridad: Valor guardado explícitamente en la sesión HTTP
+        if (session()->has('active_company_id')) {
+            return session('active_company_id');
+        }
+
+        // 2. Fallback: Si no hay sesión (o no se ha seteado), buscar la primera empresa del usuario logueado
+        if (auth()->check()) {
+            $user = auth()->user();
+            return $user->companies()->first()?->id;
+        }
+
+        return null;
     }
 }

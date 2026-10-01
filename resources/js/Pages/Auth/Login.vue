@@ -1,6 +1,8 @@
 <script setup>
 import GuestLayout from '@/Layouts/GuestLayout.vue';
-import InputError from '@/Components/InputError.vue';
+import FormField from '@/Components/UI/Forms/FormField.vue';
+import TextField from '@/Components/UI/Forms/TextField.vue';
+import PrimaryButton from '@/Components/UI/Buttons/PrimaryButton.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 
 defineProps({
@@ -51,15 +53,14 @@ const submit = () => {
         </div>
 
         <form class="space-y-5" @submit.prevent="submit">
-            <div>
-                <label
-                    for="email"
-                    class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400"
-                >
-                    Correo electrónico
-                </label>
-
-                <input
+            <!-- Correo electrónico empaquetado en FormField -->
+            <FormField
+                for="email"
+                label="CORREO ELECTRÓNICO"
+                required
+                :error="form.errors.email"
+            >
+                <TextField
                     id="email"
                     v-model="form.email"
                     type="email"
@@ -67,35 +68,30 @@ const submit = () => {
                     autofocus
                     autocomplete="username"
                     placeholder="tu-correo@empresa.com"
-                    class="block w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm outline-none transition placeholder:text-gray-400 focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 dark:border-white/10 dark:bg-[#1c1c1f] dark:text-white dark:placeholder:text-gray-500 dark:focus:border-[#7ab7ff] dark:focus:ring-[#7ab7ff]/10"
+                    :has-error="Boolean(form.errors.email)"
                 />
+            </FormField>
 
-                <InputError class="mt-2" :message="form.errors.email" />
-            </div>
-
-            <div>
-                <label
-                    for="password"
-                    class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400"
-                >
-                    Contraseña
-                </label>
-
-                <input
+            <!-- Contraseña empaquetada en FormField -->
+            <FormField
+                for="password"
+                label="CONTRASEÑA"
+                required
+                :error="form.errors.password"
+            >
+                <TextField
                     id="password"
                     v-model="form.password"
                     type="password"
                     required
                     autocomplete="current-password"
                     placeholder="••••••••"
-                    class="block w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm outline-none transition placeholder:text-gray-400 focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 dark:border-white/10 dark:bg-[#1c1c1f] dark:text-white dark:placeholder:text-gray-500 dark:focus:border-[#7ab7ff] dark:focus:ring-[#7ab7ff]/10"
+                    :has-error="Boolean(form.errors.password)"
                 />
-
-                <InputError class="mt-2" :message="form.errors.password" />
-            </div>
+            </FormField>
 
             <div class="flex items-center justify-between gap-4">
-                <label class="flex items-center gap-2">
+                <label class="flex items-center gap-2 cursor-pointer select-none">
                     <input
                         v-model="form.remember"
                         type="checkbox"
@@ -117,13 +113,14 @@ const submit = () => {
                 </Link>
             </div>
 
-            <button
+            <!-- Botón principal usando PrimaryButton -->
+            <PrimaryButton
                 type="submit"
                 :disabled="form.processing"
-                class="flex w-full items-center justify-center rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-950/10 transition hover:-translate-y-0.5 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-gray-200"
+                class="w-full justify-center py-3 text-sm font-semibold shadow-lg"
             >
                 {{ form.processing ? 'Ingresando...' : 'Iniciar sesión' }}
-            </button>
+            </PrimaryButton>
         </form>
 
         <div class="my-6 flex items-center gap-3">
@@ -148,15 +145,40 @@ const submit = () => {
             Continuar con Google
         </a>
 
-        <div class="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
-            ¿Todavía no tienes cuenta?
+        <!-- Enlaces de navegación / Sección Solicitud B2B -->
+        <div class="mt-8 space-y-4">
+            <div class="text-center text-sm text-gray-500 dark:text-gray-400">
+                ¿Todavía no tienes cuenta?
+                <Link
+                    :href="route('register')"
+                    class="font-semibold text-[#0066cc] underline-offset-4 transition hover:underline dark:text-[#7ab7ff]"
+                >
+                    Crear cuenta
+                </Link>
+            </div>
 
-            <Link
-                :href="route('register')"
-                class="font-semibold text-[#0066cc] underline-offset-4 transition hover:underline dark:text-[#7ab7ff]"
-            >
-                Crear cuenta
-            </Link>
+            <!-- Acceso al Buscador Inteligente de Organizaciones -->
+            <div class="pt-3 border-t border-gray-100 dark:border-white/5">
+                <Link
+                    :href="route('join.lookup')"
+                    class="group flex w-full items-center justify-between rounded-2xl border border-gray-100 bg-gray-50/50 p-3.5 transition-all duration-300 hover:border-gray-200 hover:bg-gray-100/80 dark:border-white/5 dark:bg-white/[0.02] dark:hover:border-white/10 dark:hover:bg-white/[0.04]"
+                >
+                    <div class="flex flex-col">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                            ¿Unirte a una organización?
+                        </span>
+                        <span class="text-xs text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors">
+                            Busca la empresa por su nombre o sitio web
+                        </span>
+                    </div>
+
+                    <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-gray-500 shadow-sm group-hover:translate-x-0.5 group-hover:text-[#0066cc] dark:bg-white/10 dark:text-gray-300 dark:group-hover:text-[#7ab7ff] transition-all">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                </Link>
+            </div>
         </div>
     </GuestLayout>
 </template>

@@ -18,18 +18,39 @@ class SubscriptionController extends Controller
             ->latest()
             ->get()
             ->map(function ($subscription) {
-                $contactName = trim(($subscription->contact?->first_name ?? '') . ' ' . ($subscription->contact?->last_name ?? ''));
-
+                $contactName = trim(
+                    ($subscription->contact?->first_name ?? '') .
+                    ' ' .
+                    ($subscription->contact?->last_name ?? '')
+                );
                 return [
                     'id' => $subscription->id,
-                    'contact_name' => $contactName !== '' ? $contactName : 'Sin contacto',
-                    'product_name' => $subscription->product?->name ?? 'Sin producto',
+                    'contact_id' => $subscription->contact_id,
+                    'product_id' => $subscription->product_id,
+                    'contact_name' => $contactName !== ''
+                        ? $contactName
+                        : 'Sin contacto',
+                    'product_name' => $subscription->product?->name
+                        ?? 'Sin producto',
                     'price_list' => $subscription->price_list,
+                    'currency' => $subscription->currency
+                        ?? $subscription->product?->currency
+                        ?? 'USD',
                     'discount' => $subscription->discount,
                     'total_neto' => $subscription->total_neto,
-                    'starts_at' => $subscription->starts_at?->format('d/m/Y'),
-                    'expires_at' => $subscription->expires_at?->format('d/m/Y'),
-                    'status' => $subscription->status,
+                    'starts_at' => $subscription->starts_at?->format('Y-m-d'),
+                    'expires_at' => $subscription->expires_at?->format('Y-m-d'),
+                    'starts_at_formatted' => $subscription->starts_at?->format('d/m/Y'),
+                    'expires_at_formatted' => $subscription->expires_at?->format('d/m/Y'),
+
+                    /*
+                     * Estado real de la suscripción.
+                     *
+                     * No usamos directamente $subscription->status
+                     * porque una suscripción puede seguir guardada
+                     * como "active" aunque expires_at ya haya pasado.
+                     */
+                    'status' => $subscription->effective_status,
                 ];
             })
             ->values();
@@ -37,18 +58,32 @@ class SubscriptionController extends Controller
         $contacts = Contact::query()
             ->orderBy('first_name')
             ->orderBy('last_name')
-            ->get(['id', 'first_name', 'last_name'])
+            ->get([
+                'id',
+                'first_name',
+                'last_name',
+            ])
             ->map(function ($contact) {
                 return [
                     'id' => $contact->id,
-                    'name' => trim($contact->first_name . ' ' . $contact->last_name),
+
+                    'name' => trim(
+                        $contact->first_name .
+                        ' ' .
+                        $contact->last_name
+                    ),
                 ];
             })
             ->values();
 
         $products = Product::query()
             ->orderBy('name')
-            ->get(['id', 'name', 'price_list'])
+            ->get([
+                'id',
+                'name',
+                'price_list',
+                'currency',
+            ])
             ->values();
 
         return Inertia::render('Subscriptions/Index', [
@@ -61,19 +96,55 @@ class SubscriptionController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'contact_id' => ['required', 'exists:contacts,id'],
-            'product_id' => ['required', 'exists:products,id'],
-            'price_list' => ['required', 'numeric', 'min:0'],
-            'discount' => ['nullable', 'numeric', 'min:0'],
-            'starts_at' => ['required', 'date'],
-            'expires_at' => ['required', 'date'],
-            'status' => ['required', 'in:active,expired,suspended'],
+            'contact_id' => [
+                'required',
+                'exists:contacts,id',
+            ],
+
+            'product_id' => [
+                'required',
+                'exists:products,id',
+            ],
+
+            'price_list' => [
+                'required',
+                'numeric',
+                'min:0',
+            ],
+
+            'currency' => [
+                'required',
+                'string',
+                'in:USD,BOB',
+            ],
+
+            'discount' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+
+            'starts_at' => [
+                'required',
+                'date',
+            ],
+
+            'expires_at' => [
+                'required',
+                'date',
+            ],
+
+            'status' => [
+                'required',
+                'in:active,expired,suspended',
+            ],
         ]);
 
         Subscription::create([
             'contact_id' => $validated['contact_id'],
             'product_id' => $validated['product_id'],
             'price_list' => $validated['price_list'],
+            'currency' => $validated['currency'],
             'discount' => $validated['discount'] ?? 0,
             'starts_at' => $validated['starts_at'],
             'expires_at' => $validated['expires_at'],
@@ -83,22 +154,60 @@ class SubscriptionController extends Controller
         return redirect()->route('subscriptions.index');
     }
 
-    public function update(Request $request, Subscription $subscription): RedirectResponse
-    {
+    public function update(
+        Request $request,
+        Subscription $subscription
+    ): RedirectResponse {
         $validated = $request->validate([
-            'contact_id' => ['required', 'exists:contacts,id'],
-            'product_id' => ['required', 'exists:products,id'],
-            'price_list' => ['required', 'numeric', 'min:0'],
-            'discount' => ['nullable', 'numeric', 'min:0'],
-            'starts_at' => ['required', 'date'],
-            'expires_at' => ['required', 'date'],
-            'status' => ['required', 'in:active,expired,suspended'],
+            'contact_id' => [
+                'required',
+                'exists:contacts,id',
+            ],
+
+            'product_id' => [
+                'required',
+                'exists:products,id',
+            ],
+
+            'price_list' => [
+                'required',
+                'numeric',
+                'min:0',
+            ],
+
+            'currency' => [
+                'required',
+                'string',
+                'in:USD,BOB',
+            ],
+
+            'discount' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+
+            'starts_at' => [
+                'required',
+                'date',
+            ],
+
+            'expires_at' => [
+                'required',
+                'date',
+            ],
+
+            'status' => [
+                'required',
+                'in:active,expired,suspended',
+            ],
         ]);
 
         $subscription->update([
             'contact_id' => $validated['contact_id'],
             'product_id' => $validated['product_id'],
             'price_list' => $validated['price_list'],
+            'currency' => $validated['currency'],
             'discount' => $validated['discount'] ?? 0,
             'starts_at' => $validated['starts_at'],
             'expires_at' => $validated['expires_at'],
@@ -108,8 +217,9 @@ class SubscriptionController extends Controller
         return redirect()->route('subscriptions.index');
     }
 
-    public function destroy(Subscription $subscription): RedirectResponse
-    {
+    public function destroy(
+        Subscription $subscription
+    ): RedirectResponse {
         $subscription->delete();
 
         return redirect()->route('subscriptions.index');

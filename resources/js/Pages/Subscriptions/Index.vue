@@ -1,83 +1,71 @@
 <script setup>
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, useForm, router } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import { Head, router } from '@inertiajs/vue3'
+import { computed, ref } from 'vue'
+
+import PrimaryButton from '@/Components/UI/Buttons/PrimaryButton.vue'
+import SecondaryButton from '@/Components/UI/Buttons/SecondaryButton.vue'
+import GlassDropdown from '@/Components/UI/GlassDropdown.vue'
+import SubscriptionTable from './Components/SubscriptionTable.vue'
+import SubscriptionFormModal from './Components/SubscriptionFormModal.vue'
+
+import {
+    PlusIcon,
+    MagnifyingGlassIcon,
+    DocumentArrowDownIcon,
+    TableCellsIcon,
+    ChevronDownIcon,
+} from '@heroicons/vue/24/outline'
+
+defineOptions({
+    layout: AuthenticatedLayout,
+});
 
 const props = defineProps({
-    subscriptions: Array,
-    contacts: Array,
-    products: Array,
-});
+    subscriptions: { type: Array, default: () => [] },
+    contacts: { type: Array, default: () => [] },
+    products: { type: Array, default: () => [] },
+})
 
-const showModal = ref(false);
-const editing = ref(false);
-const selectedId = ref(null);
-
-const search = ref('');
-const filterStatus = ref('all');
-
-const form = useForm({
-    contact_id: '',
-    product_id: '',
-    price_list: '',
-    discount: 0,
-    starts_at: '',
-    expires_at: '',
-    status: 'active',
-});
+const showModal = ref(false)
+const selectedSubscription = ref(null)
+const searchQuery = ref('')
+const filterStatus = ref('all')
 
 const filteredSubscriptions = computed(() => {
+    const q = searchQuery.value.toLowerCase().trim()
+
     return props.subscriptions.filter((item) => {
-        const contactName = item.contact?.name || '';
-        const productName = item.product?.name || '';
+        const contactName = (item.contact_name || '').toLowerCase()
+        const productName = (item.product_name || '').toLowerCase()
 
         const matchesSearch =
-            contactName.toLowerCase().includes(search.value.toLowerCase()) ||
-            productName.toLowerCase().includes(search.value.toLowerCase());
+            !q || contactName.includes(q) || productName.includes(q)
 
         const matchesStatus =
             filterStatus.value === 'all'
                 ? true
-                : item.status === filterStatus.value;
+                : item.status === filterStatus.value
 
-        return matchesSearch && matchesStatus;
-    });
-});
+        return matchesSearch && matchesStatus
+    })
+})
 
 function openCreate() {
-    editing.value = false;
-    selectedId.value = null;
-    form.reset();
-    form.discount = 0;
-    form.status = 'active';
-    showModal.value = true;
+    selectedSubscription.value = null
+    showModal.value = true
 }
 
 function openEdit(subscription) {
-    editing.value = true;
-    selectedId.value = subscription.id;
-    form.contact_id = subscription.contact_id;
-    form.product_id = subscription.product_id;
-    form.price_list = subscription.price_list;
-    form.discount = subscription.discount;
-    form.starts_at = subscription.starts_at;
-    form.expires_at = subscription.expires_at;
-    form.status = subscription.status;
-    showModal.value = true;
-}
-
-function saveSubscription() {
-    if (editing.value) {
-        form.put(route('subscriptions.update', selectedId.value));
-    } else {
-        form.post(route('subscriptions.store'));
-    }
-    showModal.value = false;
+    selectedSubscription.value = subscription
+    showModal.value = true
 }
 
 function deleteSubscription(id) {
     if (confirm('¿Eliminar esta suscripción?')) {
-        router.delete(route('subscriptions.destroy', id));
+        router.delete(route('subscriptions.destroy', id), {
+            preserveScroll: true,
+        })
     }
 }
 </script>
@@ -85,215 +73,170 @@ function deleteSubscription(id) {
 <template>
     <Head title="Suscripciones | DominioMatic" />
 
-    <AuthenticatedLayout>
-        <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8 text-gray-900 dark:text-gray-100">
-            
-            <div class="ty-page-header">
-                <div class="ty-page-heading">
-                    <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-                        Suscripciones
-                    </h1>
-                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        Gestión de servicios contratados y ciclos de facturación.
-                    </p>
-                </div>
+    <div
+        class="min-h-screen overflow-x-hidden bg-[#f5f5f7] text-slate-950 transition-colors dark:bg-[#050507] dark:text-white"
+    >
+        <!-- AMBIENT BACKGROUND — DominioMatic brand gradient -->
+        <div
+            class="pointer-events-none fixed inset-0 overflow-hidden"
+            aria-hidden="true"
+        >
+            <div
+                class="absolute -bottom-56 -left-56 h-[44rem] w-[44rem] rounded-full opacity-[0.14] blur-[130px] dark:opacity-[0.24]"
+                style="background: radial-gradient(circle, #002B48 0%, transparent 70%)"
+            ></div>
 
-                <div class="ty-page-actions">
-                    <a
-                        href="/dashboard"
-                        class="ty-action-btn ty-action-dark"
-                    >
-                        Volver al dashboard
-                    </a>
+            <div
+                class="absolute -right-48 -top-48 h-[42rem] w-[42rem] rounded-full opacity-[0.16] blur-[130px] dark:opacity-[0.26]"
+                style="background: radial-gradient(circle, #0072A8 0%, transparent 70%)"
+            ></div>
 
-                    <button
-                        type="button"
-                        @click="openCreate"
-                        class="ty-action-btn ty-action-light"
-                    >
-                        Nueva suscripción
-                    </button>
+            <div
+                class="absolute -left-40 top-[18%] h-[38rem] w-[38rem] rounded-full opacity-[0.12] blur-[120px] dark:opacity-[0.20]"
+                style="background: radial-gradient(circle, #21B24B 0%, transparent 70%)"
+            ></div>
 
-                    <a
-                        :href="route('reports.subscriptions.pdf')"
-                        target="_blank"
-                        class="ty-report-btn ty-report-pdf"
-                    >
-                        Exportar PDF
-                    </a>
+            <div
+                class="absolute -right-40 bottom-[8%] h-[40rem] w-[40rem] rounded-full opacity-[0.10] blur-[130px] dark:opacity-[0.18]"
+                style="background: radial-gradient(circle, #005E2B 0%, transparent 70%)"
+            ></div>
 
-                    <a
-                        :href="route('reports.subscriptions.excel')"
-                        class="ty-report-btn ty-report-excel"
-                    >
-                        Exportar Excel
-                    </a>
-                </div>
-            </div>
-
-        <div class="glass-card p-6">
-            
-            <div class="flex flex-col md:flex-row gap-3 mb-6">
-                <input
-                    v-model="search"
-                    type="text"
-                    placeholder="Buscar por cliente o servicio..."
-                    class="flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-[#0066cc] dark:border-white/10 dark:bg-[#1c1c1f] dark:text-gray-100 dark:placeholder:text-gray-500"
-                />
-
-                <select
-                    v-model="filterStatus"
-                    class="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-[#0066cc] dark:border-white/10 dark:bg-[#1c1c1f] dark:text-gray-100"
-                >
-                    <option value="all">Todos los estados</option>
-                    <option value="active">Activas</option>
-                    <option value="expired">Vencidas</option>
-                    <option value="suspended">Suspendidas</option>
-                </select>
-            </div>
-
-            <div class="overflow-hidden rounded-2xl border border-gray-100 dark:border-white/10">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-100 dark:divide-white/10">
-                        <thead class="bg-gray-50 dark:bg-[#1c1c1f]">
-                            <tr>
-                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Cliente</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Producto</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Neto</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Estado</th>
-                                <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100 bg-white dark:divide-white/10 dark:bg-transparent">
-                            <tr
-                                v-for="subscription in filteredSubscriptions"
-                                :key="subscription.id"
-                                class="hover:bg-gray-50/80 dark:hover:bg-[#1c1c1f] transition-colors"
-                            >
-                                <td class="px-4 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                                    {{ subscription.contact_name }}
-                                </td>
-
-                                <td class="px-4 py-4 text-sm text-gray-600 dark:text-gray-300">
-                                    {{ subscription.product_name }}
-                                </td>
-                                <td class="px-4 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                                    ${{ subscription.total_neto }}
-                                </td>
-                                <td class="px-4 py-4 text-sm">
-                                    <span
-                                        class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize shadow-sm dark:bg-white/10 dark:text-gray-300 bg-gray-100 text-gray-800"
-                                    >
-                                        {{ subscription.status }}
-                                    </span>
-                                </td>
-                                <td class="px-4 py-3 text-right">
-                                    <div class="ty-row-actions">
-                                        <button
-                                            type="button"
-                                            @click="openEdit(subscription)"
-                                            class="ty-table-action-btn ty-table-edit"
-                                        >
-                                            Editar
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            @click="destroy(subscription)"
-                                            class="ty-table-action-btn ty-table-delete"
-                                        >
-                                            Eliminar
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr v-if="!filteredSubscriptions.length">
-                                <td colspan="5" class="px-4 py-14 text-center text-sm text-gray-500 dark:text-gray-400">
-                                    No se encontraron registros de suscripción.
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
+            <div
+                class="absolute left-1/2 top-1/3 h-[36rem] w-[36rem] -translate-x-1/2 rounded-full opacity-[0.55] blur-[140px] dark:opacity-[0.06]"
+                style="background: radial-gradient(circle, #FFFFFF 0%, transparent 65%)"
+            ></div>
         </div>
-    </div>
 
-    <div v-if="showModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-        <div class="glass-card p-6 w-full max-w-xl shadow-2xl transition-all">
-            
-            <div class="flex items-start justify-between gap-4 mb-6">
+        <div
+            class="relative mx-auto max-w-[1480px] px-4 pb-20 pt-5 sm:px-6 lg:px-8"
+        >
+            <!-- HEADER -->
+            <header
+                class="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between"
+            >
                 <div>
-                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
-                        {{ editing ? 'Editar Suscripción' : 'Nueva Suscripción' }}
-                    </h2>
-                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        Configura el ciclo, precio y estado de la afiliación.
+                    <div class="flex items-center gap-3">
+                        <h1
+                            class="text-3xl font-semibold tracking-[-0.045em] text-slate-950 sm:text-4xl dark:text-white"
+                        >
+                            Suscripciones
+                        </h1>
+                    </div>
+
+                    <p
+                        class="mt-2 max-w-xl text-sm text-slate-500 dark:text-slate-400"
+                    >
+                        Gestión de servicios contratados y ciclos de
+                        facturación.
                     </p>
                 </div>
-                <button type="button" class="text-gray-400 transition hover:text-gray-700 dark:hover:text-gray-200" @click="showModal = false">✕</button>
-            </div>
 
-            <div class="space-y-4">
-                <div>
-                    <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Contacto / Cliente</label>
-                    <select v-model="form.contact_id" class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-[#0066cc] dark:border-white/10 dark:bg-[#1c1c1f] dark:text-white">
-                        <option value="">Seleccionar contacto</option>
-                        <option v-for="contact in contacts" :key="contact.id" :value="contact.id">{{ contact.name }}</option>
-                    </select>
+                <div
+                    class="flex flex-wrap items-center gap-2 sm:gap-3"
+                >
+                    <GlassDropdown align="right" width="w-48">
+                        <template #trigger="{ isOpen }">
+                            <SecondaryButton>
+                                <DocumentArrowDownIcon
+                                    class="h-4 w-4 stroke-[2.2]"
+                                />
+                                <span>Exportar</span>
+                                <ChevronDownIcon
+                                    class="h-3.5 w-3.5 opacity-60 transition-transform duration-300"
+                                    :class="{
+                                        'rotate-180': isOpen,
+                                    }"
+                                />
+                            </SecondaryButton>
+                        </template>
+
+                        <template #content>
+                            <a
+                                :href="
+                                    route('reports.subscriptions.pdf')
+                                "
+                                target="_blank"
+                                class="group flex items-center gap-2.5 rounded-2xl px-3.5 py-2.5 text-xs font-semibold text-slate-700 transition-all duration-200 hover:bg-[#0072A8] hover:text-white dark:text-slate-200"
+                            >
+                                <DocumentArrowDownIcon
+                                    class="h-4 w-4 text-rose-500 transition-colors group-hover:text-white"
+                                />
+                                <span>Reporte PDF</span>
+                            </a>
+
+                            <a
+                                :href="
+                                    route(
+                                        'reports.subscriptions.excel'
+                                    )
+                                "
+                                class="group flex items-center gap-2.5 rounded-2xl px-3.5 py-2.5 text-xs font-semibold text-slate-700 transition-all duration-200 hover:bg-[#0072A8] hover:text-white dark:text-slate-200"
+                            >
+                                <TableCellsIcon
+                                    class="h-4 w-4 text-emerald-500 transition-colors group-hover:text-white"
+                                />
+                                <span>Exportar Excel</span>
+                            </a>
+                        </template>
+                    </GlassDropdown>
+
+                    <PrimaryButton @click="openCreate">
+                        <PlusIcon class="h-4 w-4 stroke-[2.5]" />
+                        <span>Nueva suscripción</span>
+                    </PrimaryButton>
                 </div>
+            </header>
 
-                <div>
-                    <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Producto / Servicio</label>
-                    <select v-model="form.product_id" class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-[#0066cc] dark:border-white/10 dark:bg-[#1c1c1f] dark:text-white">
-                        <option value="">Seleccionar producto</option>
-                        <option v-for="product in products" :key="product.id" :value="product.id">{{ product.name }}</option>
-                    </select>
-                </div>
+            <!-- SEARCH + FILTER + TABLE (un solo contenedor) -->
+            <div
+                class="rounded-[28px] border border-white/65 bg-white/35 p-2 shadow-[0_22px_70px_rgba(15,23,42,0.06),inset_0_1px_2px_rgba(255,255,255,0.85),inset_0_-2px_5px_rgba(0,0,0,0.06)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#101014]/65 dark:shadow-[0_22px_70px_rgba(0,0,0,0.28),inset_0_1px_2px_rgba(255,255,255,0.16),inset_0_-2px_6px_rgba(0,0,0,0.5)] sm:p-3"
+            >
+                <!-- Search + Filter row -->
+                <div class="mb-3 flex flex-col gap-2 sm:flex-row">
+                    <div
+                        class="flex-1 rounded-[20px] border border-white/60 bg-white/45 p-1.5 dark:border-white/[0.08] dark:bg-white/[0.03]"
+                    >
+                        <div class="relative flex items-center">
+                            <MagnifyingGlassIcon
+                                class="absolute left-4 h-4 w-4 text-slate-400 dark:text-slate-500"
+                            />
 
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Precio de Lista</label>
-                        <input v-model="form.price_list" type="number" placeholder="0.00" class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-[#0066cc] dark:border-white/10 dark:bg-[#1c1c1f] dark:text-white">
+                            <input
+                                v-model="searchQuery"
+                                type="text"
+                                placeholder="Buscar por cliente o producto..."
+                                class="w-full rounded-[16px] border-0 bg-transparent py-2.5 pl-10 pr-4 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:bg-white/50 focus:ring-2 focus:ring-[#0072A8] dark:bg-transparent dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-black/20 dark:focus:ring-[#0072A8]"
+                            />
+                        </div>
                     </div>
-                    <div>
-                        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Descuento aplicado</label>
-                        <input v-model="form.discount" type="number" placeholder="0.00" class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-[#0066cc] dark:border-white/10 dark:bg-[#1c1c1f] dark:text-white">
-                    </div>
-                </div>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Fecha Inicio</label>
-                        <input v-model="form.starts_at" type="date" class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-[#0066cc] dark:border-white/10 dark:bg-[#1c1c1f] dark:text-white">
-                    </div>
-                    <div>
-                        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Fecha Expiración</label>
-                        <input v-model="form.expires_at" type="date" class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-[#0066cc] dark:border-white/10 dark:bg-[#1c1c1f] dark:text-white">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Estado de la suscripción</label>
-                    <select v-model="form.status" class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-[#0066cc] dark:border-white/10 dark:bg-[#1c1c1f] dark:text-white">
-                        <option value="active">Activa</option>
-                        <option value="expired">Vencida</option>
+                    <select
+                        v-model="filterStatus"
+                        class="rounded-[20px] border border-white/60 bg-white/45 px-4 py-2.5 text-sm font-medium text-slate-700 outline-none transition focus:ring-2 focus:ring-[#0072A8] dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-slate-200 sm:w-48"
+                    >
+                        <option value="all">Todos los estados</option>
+                        <option value="active">Activas</option>
+                        <option value="expired">Vencidas</option>
                         <option value="suspended">Suspendidas</option>
                     </select>
                 </div>
-            </div>
 
-            <div class="flex justify-end gap-3 mt-6">
-                <button @click="showModal = false" class="rounded-2xl border border-gray-200 px-5 py-3 text-sm font-semibold text-gray-700 dark:border-white/10 dark:text-gray-200">
-                    Cancelar
-                </button>
-                <button @click="saveSubscription" class="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white dark:bg-white dark:text-black">
-                    Guardar
-                </button>
+                <!-- Table -->
+                <SubscriptionTable
+                    :subscriptions="filteredSubscriptions"
+                    @edit="openEdit"
+                    @delete="deleteSubscription"
+                />
             </div>
-
         </div>
     </div>
-</AuthenticatedLayout>
+
+    <!-- MODAL -->
+    <SubscriptionFormModal
+        :show="showModal"
+        :editing-subscription="selectedSubscription"
+        :contacts="contacts"
+        :products="products"
+        @close="showModal = false"
+    />
 </template>

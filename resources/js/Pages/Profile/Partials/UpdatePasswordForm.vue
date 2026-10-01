@@ -1,19 +1,19 @@
 <script setup>
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
-import { useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import InputError from '@/Components/InputError.vue'
+import InputLabel from '@/Components/InputLabel.vue'
+import PrimaryButton from '@/Components/PrimaryButton.vue'
+import TextInput from '@/Components/TextInput.vue'
+import { useForm } from '@inertiajs/vue3'
+import { ref } from 'vue'
 
-const passwordInput = ref(null);
-const currentPasswordInput = ref(null);
+const passwordInput = ref(null)
+const currentPasswordInput = ref(null)
 
 const form = useForm({
     current_password: '',
     password: '',
     password_confirmation: '',
-});
+})
 
 const updatePassword = () => {
     form.put(route('password.update'), {
@@ -21,33 +21,43 @@ const updatePassword = () => {
         onSuccess: () => form.reset(),
         onError: () => {
             if (form.errors.password) {
-                form.reset('password', 'password_confirmation');
-                passwordInput.value.focus();
+                form.reset('password', 'password_confirmation')
+                passwordInput.value.focus()
             }
             if (form.errors.current_password) {
-                form.reset('current_password');
-                currentPasswordInput.value.focus();
+                form.reset('current_password')
+                currentPasswordInput.value.focus()
             }
         },
-    });
-};
+    })
+}
 </script>
 
 <template>
     <section>
         <header>
-            <h2 class="text-lg font-semibold tracking-tight text-gray-900 dark:text-white">
+            <h2
+                class="text-lg font-semibold tracking-[-0.02em] text-slate-950 dark:text-white"
+            >
                 Actualizar Contraseña
             </h2>
 
-            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Asegúrate de que tu cuenta esté utilizando una contraseña larga y aleatoria para mantenerse segura.
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Asegúrate de que tu cuenta esté utilizando una contraseña
+                larga y aleatoria para mantenerse segura.
             </p>
         </header>
 
-        <form @submit.prevent="updatePassword" class="mt-6 space-y-6">
+        <form
+            class="mt-6 space-y-6"
+            @submit.prevent="updatePassword"
+        >
             <div>
-                <InputLabel for="current_password" value="Contraseña Actual" />
+                <InputLabel
+                    for="current_password"
+                    value="Contraseña Actual"
+                    class="mb-2 block font-medium text-slate-700 dark:text-slate-200"
+                />
 
                 <TextInput
                     id="current_password"
@@ -58,11 +68,18 @@ const updatePassword = () => {
                     autocomplete="current-password"
                 />
 
-                <InputError :message="form.errors.current_password" class="mt-2" />
+                <InputError
+                    class="mt-2"
+                    :message="form.errors.current_password"
+                />
             </div>
 
             <div>
-                <InputLabel for="password" value="Nueva Contraseña" />
+                <InputLabel
+                    for="password"
+                    value="Nueva Contraseña"
+                    class="mb-2 block font-medium text-slate-700 dark:text-slate-200"
+                />
 
                 <TextInput
                     id="password"
@@ -73,11 +90,18 @@ const updatePassword = () => {
                     autocomplete="new-password"
                 />
 
-                <InputError :message="form.errors.password" class="mt-2" />
+                <InputError
+                    class="mt-2"
+                    :message="form.errors.password"
+                />
             </div>
 
             <div>
-                <InputLabel for="password_confirmation" value="Confirmar Contraseña" />
+                <InputLabel
+                    for="password_confirmation"
+                    value="Confirmar Contraseña"
+                    class="mb-2 block font-medium text-slate-700 dark:text-slate-200"
+                />
 
                 <TextInput
                     id="password_confirmation"
@@ -87,11 +111,16 @@ const updatePassword = () => {
                     autocomplete="new-password"
                 />
 
-                <InputError :message="form.errors.password_confirmation" class="mt-2" />
+                <InputError
+                    class="mt-2"
+                    :message="form.errors.password_confirmation"
+                />
             </div>
 
             <div class="flex items-center gap-4">
-                <PrimaryButton :disabled="form.processing">Guardar</PrimaryButton>
+                <PrimaryButton :disabled="form.processing">
+                    Guardar
+                </PrimaryButton>
 
                 <Transition
                     enter-active-class="transition ease-in-out"
@@ -99,7 +128,10 @@ const updatePassword = () => {
                     leave-active-class="transition ease-in-out"
                     leave-to-class="opacity-0"
                 >
-                    <p v-if="form.recentlySuccessful" class="text-sm text-gray-600 dark:text-gray-400">
+                    <p
+                        v-if="form.recentlySuccessful"
+                        class="text-sm text-slate-500 dark:text-slate-400"
+                    >
                         Guardado.
                     </p>
                 </Transition>

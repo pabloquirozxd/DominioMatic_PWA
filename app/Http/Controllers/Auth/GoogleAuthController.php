@@ -3,62 +3,38 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\Company;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
-use Illuminate\Http\JsonResponse;
 use Throwable;
 
 class GoogleAuthController extends Controller
 {
-    public function redirect(Request $request): RedirectResponse
+    /**
+     * Redirect the user to Google.
+     */
+    public function redirect(): RedirectResponse
     {
-        $mode = $request->input('mode', 'login');
-
-        if ($mode === 'register') {
-            $validated = $request->validate([
-                'company_identifier' => ['required', 'string', 'max:255'],
-            ]);
-
-            $companyIdentifier = $this->normalizeCompanyIdentifier(
-                $validated['company_identifier']
-            );
-
-            $company = $this->findCompany($companyIdentifier);
-
-            if (! $company) {
-                return redirect()
-                    ->route('register')
-                    ->withErrors([
-                        'company_identifier' => 'No encontramos una empresa registrada con ese nombre. Verifica que esté escrito correctamente.',
-                    ])
-                    ->withInput([
-                        'company_identifier' => $request->input('company_identifier'),
-                    ]);
-            }
-
-            $request->session()->put('google_auth_mode', 'register');
-            $request->session()->put('google_auth_company_id', $company->id);
-            $request->session()->save();
-        } else {
-            $request->session()->put('google_auth_mode', 'login');
-            $request->session()->forget('google_auth_company_id');
-            $request->session()->save();
-        }
-
         return Socialite::driver('google')->redirect();
     }
 
-    public function callback(): RedirectResponse
+    /**
+     * Handle Google's callback.
+     */
+    public function callback(Request $request): RedirectResponse
     {
         try {
             $googleUser = Socialite::driver('google')->user();
-        } catch (Throwable) {
+        } catch (Throwable $e) {
+            Log::error('Error en callback de Google OAuth: ' . $e->getMessage(), [
+                'exception' => $e
+            ]);
+
             return redirect()
                 ->route('login')
                 ->withErrors([
@@ -66,11 +42,19 @@ class GoogleAuthController extends Controller
                 ]);
         }
 
+        /*
+         * Buscamos primero por Google ID y luego por correo.
+         */
         $user = User::query()
             ->where('google_id', $googleUser->getId())
             ->orWhere('email', $googleUser->getEmail())
             ->first();
 
+        /*
+         * ---------------------------------------------------------------
+         * Usuario existente
+         * ---------------------------------------------------------------
+         */
         if ($user) {
             $user->update([
                 'google_id' => $googleUser->getId(),
@@ -79,85 +63,64 @@ class GoogleAuthController extends Controller
 
             Auth::login($user, true);
 
-            return redirect()->route('dashboard');
+            $request->session()->regenerate();
+
+            /*
+             * Buscamos la empresa principal.
+             * Priorizamos donde tenga rol 'owner' o 'admin' para evitar seleccionar
+             * empresas secundarias o vacías por defecto.
+             */
+            $company = $user->companies()
+                ->wherePivot('role', 'owner')
+                ->first() 
+                ?? $user->companies()->wherePivot('role', 'admin')->first()
+                ?? $user->companies()->first();
+
+            if ($company) {
+                $request->session()->put(
+                    'active_company_id',
+                    $company->id
+                );
+
+                return redirect()->route('dashboard');
+            }
+
+            /*
+             * La cuenta existe pero todavía no pertenece
+             * a ninguna organización.
+             */
+            $request->session()->forget('active_company_id');
+
+            return redirect()->route('join.lookup');
         }
 
-        if (session('google_auth_mode') !== 'register' || ! session('google_auth_company_id')) {
-            return redirect()
-                ->route('login')
-                ->withErrors([
-                    'email' => 'No existe una cuenta registrada con ese correo de Google. Primero crea una cuenta.',
-                ]);
-        }
-
+        /*
+         * ---------------------------------------------------------------
+         * Usuario nuevo
+         * ---------------------------------------------------------------
+         */
         $user = User::create([
-            'name' => $googleUser->getName() ?: $googleUser->getNickname() ?: 'Usuario Google',
-            'email' => $googleUser->getEmail(),
-            'google_id' => $googleUser->getId(),
-            'avatar' => $googleUser->getAvatar(),
-            'company_id' => session('google_auth_company_id'),
-            'password' => Hash::make(Str::random(32)),
-        ]);
+            'name' => $googleUser->getName()
+                ?: $googleUser->getNickname()
+                ?: 'Usuario Google',
 
-        session()->forget([
-            'google_auth_mode',
-            'google_auth_company_id',
+            'email' => $googleUser->getEmail(),
+
+            'google_id' => $googleUser->getId(),
+
+            'avatar' => $googleUser->getAvatar(),
+
+            'password' => Hash::make(
+                Str::random(32)
+            ),
         ]);
 
         Auth::login($user, true);
 
-        return redirect()->route('dashboard');
-    }
+        $request->session()->regenerate();
 
-    private function normalizeCompanyIdentifier(string $value): string
-    {
-        $value = strtolower(trim($value));
+        $request->session()->forget('active_company_id');
 
-        $value = preg_replace('/^https?:\/\//', '', $value);
-        $value = preg_replace('/^www\./', '', $value);
-
-        return rtrim($value, '/');
-    }
-
-    public function checkCompany(Request $request): JsonResponse
-    {
-        $companyIdentifier = $this->normalizeCompanyIdentifier(
-            (string) $request->query('company_identifier', '')
-        );
-
-        if ($companyIdentifier === '') {
-            return response()->json([
-                'message' => 'Primero escribe el nombre de tu empresa para continuar con Google.',
-                'errors' => [
-                    'company_identifier' => [
-                        'Primero escribe el nombre de tu empresa para continuar con Google.',
-                    ],
-                ],
-            ], 422);
-        }
-
-        $company = $this->findCompany($companyIdentifier);
-
-        if (! $company) {
-            return response()->json([
-                'message' => 'No encontramos una empresa registrada con ese nombre.',
-                'errors' => [
-                    'company_identifier' => [
-                        'No encontramos una empresa registrada con ese nombre. Verifica que esté escrito correctamente.',
-                    ],
-                ],
-            ], 422);
-        }
-
-        return response()->json([
-            'valid' => true,
-        ]);
-    }
-    private function findCompany(string $companyIdentifier): ?Company
-    {
-        return Company::query()
-            ->whereRaw('TRIM(LOWER(slug)) = ?', [$companyIdentifier])
-            ->orWhereRaw('TRIM(LOWER(name)) = ?', [$companyIdentifier])
-            ->first();
+        return redirect()->route('join.lookup');
     }
 }

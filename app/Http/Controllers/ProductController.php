@@ -10,11 +10,29 @@ use Inertia\Response;
 
 class ProductController extends Controller
 {
-    public function index(): Response
+    /**
+     * Obtiene y valida el ID de la empresa activa del usuario desde la sesión.
+     */
+    private function getActiveCompanyId(Request $request): int
     {
-        $companyId = auth()->user()->company_id;
+        $activeCompanyId = $request->session()->get('active_company_id');
 
-        abort_unless($companyId, 403);
+        abort_unless($activeCompanyId, 403);
+
+        // Validar que el usuario realmente pertenezca a la empresa activa en sesión
+        $belongsToCompany = $request->user()
+            ->companies()
+            ->where('companies.id', $activeCompanyId)
+            ->exists();
+
+        abort_unless($belongsToCompany, 403);
+
+        return (int) $activeCompanyId;
+    }
+
+    public function index(Request $request): Response
+    {
+        $companyId = $this->getActiveCompanyId($request);
 
         $products = Product::where('company_id', $companyId)
             ->orderBy('name')
@@ -27,25 +45,30 @@ class ProductController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $companyId = auth()->user()->company_id;
-
-        abort_unless($companyId, 403);
+        $companyId = $this->getActiveCompanyId($request);
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'type'        => ['required', 'string', 'in:service,product'],
+            'name'        => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'price_list' => ['required', 'numeric', 'min:0'],
+            'price_list'  => ['required', 'numeric', 'min:0'],
+            'currency'    => ['required', 'string', 'in:USD,BOB'],
             'is_infinite' => ['required', 'boolean'],
-            'stock' => ['nullable', 'integer', 'min:0'],
+            'stock'       => ['nullable', 'integer', 'min:0'],
         ]);
 
+        $isService = $validated['type'] === 'service';
+        $isInfinite = $isService ? true : $validated['is_infinite'];
+
         Product::create([
-            'company_id' => $companyId,
-            'name' => $validated['name'],
+            'company_id'  => $companyId,
+            'type'        => $validated['type'],
+            'name'        => $validated['name'],
             'description' => $validated['description'] ?? null,
-            'price_list' => $validated['price_list'],
-            'is_infinite' => $validated['is_infinite'],
-            'stock' => $validated['is_infinite'] ? 0 : ($validated['stock'] ?? 0),
+            'price_list'  => $validated['price_list'],
+            'currency'    => $validated['currency'],
+            'is_infinite' => $isInfinite,
+            'stock'       => $isInfinite ? 0 : ($validated['stock'] ?? 0),
         ]);
 
         return redirect()->route('products.index');
@@ -53,34 +76,41 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product): RedirectResponse
     {
-        $companyId = auth()->user()->company_id;
+        $companyId = $this->getActiveCompanyId($request);
 
-        abort_unless($companyId && $product->company_id === $companyId, 403);
+        abort_unless($product->company_id === $companyId, 403);
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'type'        => ['required', 'string', 'in:service,product'],
+            'name'        => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'price_list' => ['required', 'numeric', 'min:0'],
+            'price_list'  => ['required', 'numeric', 'min:0'],
+            'currency'    => ['required', 'string', 'in:USD,BOB'],
             'is_infinite' => ['required', 'boolean'],
-            'stock' => ['nullable', 'integer', 'min:0'],
+            'stock'       => ['nullable', 'integer', 'min:0'],
         ]);
 
+        $isService = $validated['type'] === 'service';
+        $isInfinite = $isService ? true : $validated['is_infinite'];
+
         $product->update([
-            'name' => $validated['name'],
+            'type'        => $validated['type'],
+            'name'        => $validated['name'],
             'description' => $validated['description'] ?? null,
-            'price_list' => $validated['price_list'],
-            'is_infinite' => $validated['is_infinite'],
-            'stock' => $validated['is_infinite'] ? 0 : ($validated['stock'] ?? 0),
+            'price_list'  => $validated['price_list'],
+            'currency'    => $validated['currency'],
+            'is_infinite' => $isInfinite,
+            'stock'       => $isInfinite ? 0 : ($validated['stock'] ?? 0),
         ]);
 
         return redirect()->route('products.index');
     }
 
-    public function destroy(Product $product): RedirectResponse
+    public function destroy(Request $request, Product $product): RedirectResponse
     {
-        $companyId = auth()->user()->company_id;
+        $companyId = $this->getActiveCompanyId($request);
 
-        abort_unless($companyId && $product->company_id === $companyId, 403);
+        abort_unless($product->company_id === $companyId, 403);
 
         $product->delete();
 

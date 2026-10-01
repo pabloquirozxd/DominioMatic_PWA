@@ -33,7 +33,39 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        $user = $request->user();
+
+        /*
+         * Seleccionamos temporalmente la primera empresa
+         * a la que pertenece el usuario.
+         *
+         * Más adelante podremos añadir un selector
+         * para que el usuario cambie entre empresas.
+         */
+        $company = $user->companies()->first();
+
+        if ($company) {
+            $request->session()->put(
+                'active_company_id',
+                $company->id
+            );
+        } else {
+            $request->session()->forget(
+                'active_company_id'
+            );
+        }
+
+        /*
+         * Si el usuario todavía no pertenece a ninguna
+         * organización, podrá continuar hacia el flujo Join.
+         */
+        if (! $company) {
+            return redirect()->route('join.lookup');
+        }
+
+        return redirect()->intended(
+            route('dashboard', absolute: false)
+        );
     }
 
     /**

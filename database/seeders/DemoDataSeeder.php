@@ -2,11 +2,12 @@
 
 namespace Database\Seeders;
 
+use App\Models\AccessRequest;
+use App\Models\Client;
 use App\Models\Company;
-use App\Models\User;
 use App\Models\Contact;
 use App\Models\Product;
-use App\Models\Subscription;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -14,94 +15,172 @@ class DemoDataSeeder extends Seeder
 {
     public function run(): void
     {
-        $company = Company::query()
-        ->where('slug', 'dominiomatic.com')
-        ->orWhere('slug', 'dominiomatic')
-        ->first();
+        // ==========================================
+        // 1. EMPRESA PRINCIPAL
+        // ==========================================
 
-    if (! $company) {
-        $company = Company::create([
-            'name' => 'DominioMatic.com',
-            'slug' => 'dominiomatic.com',
-            'primary_color' => '#007AFF',
-            'secondary_color' => '#5856D6',
-        ]);
-    } else {
-        $company->update([
-            'name' => 'DominioMatic.com',
-            'slug' => 'dominiomatic.com',
-            'primary_color' => '#007AFF',
-            'secondary_color' => '#5856D6',
-        ]);
-}
+        $company = Company::updateOrCreate(
+            ['slug' => 'dominiomatic'],
+            [
+                'name' => 'DominioMatic.com',
+                'status' => 'active',
+                'primary_color' => '#007AFF',
+                'secondary_color' => '#5856D6',
+            ]
+        );
 
-        User::updateOrCreate(
+        // ==========================================
+        // 2. SEGUNDA EMPRESA
+        // ==========================================
+
+        $companyDemo = Company::updateOrCreate(
+            ['slug' => 'empresa-demo'],
+            [
+                'name' => 'Empresa Demo Corp',
+                'status' => 'active',
+                'primary_color' => '#10B981',
+                'secondary_color' => '#059669',
+            ]
+        );
+
+        // ==========================================
+        // 3. USUARIOS
+        // ==========================================
+
+        $pablo = User::updateOrCreate(
             ['email' => 'pablo@quiroz.me'],
             [
-                'name' => 'Pablo',
-                'company_id' => $company->id,
+                'name' => 'Pablo Quiroz',
                 'password' => Hash::make('123456789'),
             ]
         );
 
-        User::updateOrCreate(
-            ['email' => 'aguilar@gmail.com'],
+        $ricardo = User::updateOrCreate(
+            ['email' => 'ricardo@dominiomatic.com'],
             [
-                'name' => 'Edwin',
-                'company_id' => $company->id,
+                'name' => 'Ricardo Quiroz',
                 'password' => Hash::make('987654321'),
             ]
         );
 
-        $contact = Contact::updateOrCreate(
-            ['email' => 'pablo@quiroz.me'],
+        $juan = User::updateOrCreate(
+            ['email' => 'juan.perez@cliente.com'],
             [
-                'company_id' => $company->id,
-                'first_name' => 'Pablo',
-                'last_name' => 'Quiroz',
-                'phone' => '77072256',
-                'type' => 'secondary',
-                'position' => 'IT',
+                'name' => 'Juan Pérez',
+                'password' => Hash::make('123456789'),
             ]
         );
 
-        Contact::updateOrCreate(
-            ['email' => 'aguilar@gmail.com'],
-            [
-                'company_id' => $company->id,
-                'first_name' => 'Edwin',
-                'last_name' => 'Aguilar',
-                'phone' => '77077777',
-                'type' => 'primary',
-                'position' => 'Docente',
-            ]
-        );
+        // ==========================================
+        // 4. MEMBRESÍAS Y ROLES EN EMPRESAS
+        // ==========================================
 
-        $product = Product::updateOrCreate(
+        $company->users()->syncWithoutDetaching([
+            $pablo->id => ['role' => 'owner'],
+            $ricardo->id => ['role' => 'owner'],
+        ]);
+
+        $companyDemo->users()->syncWithoutDetaching([
+            $pablo->id => ['role' => 'admin'],
+        ]);
+
+        // ==========================================
+        // 5. CLIENTES Y CONTACTOS
+        // ==========================================
+
+        $clientBB = Client::updateOrCreate(
             [
                 'company_id' => $company->id,
-                'name' => 'Hosting',
+                'company_name' => 'Bolivian Business',
             ],
             [
-                'description' => 'Hosting básico',
-                'price_list' => 20,
-                'is_infinite' => false,
-                'stock' => 100,
+                'type' => 'company',
+                'language' => 'Español',
+                'website' => 'bolivianbusiness.com.bo',
+                'portal_enabled' => true,
             ]
         );
 
-        Subscription::updateOrCreate(
+        $contactAlejandro = Contact::updateOrCreate(
             [
                 'company_id' => $company->id,
-                'contact_id' => $contact->id,
-                'product_id' => $product->id,
+                'email' => 'acalderon@bolivianbusiness.com.bo',
             ],
             [
-                'price_list' => 10,
-                'discount' => 0,
-                'starts_at' => '2026-06-19',
-                'expires_at' => '2026-07-19',
-                'status' => 'active',
+                'first_name' => 'Alejandro',
+                'last_name' => 'Calderón',
+                'phone' => '70000000',
+                'position' => 'Gerente General',
+            ]
+        );
+
+        // Vincular en la tabla pivote client_contact
+        $clientBB->contacts()->syncWithoutDetaching([
+            $contactAlejandro->id => [
+                'position' => 'Gerente General',
+                'is_primary' => true,
+            ],
+        ]);
+
+        // ==========================================
+        // 6. CATÁLOGO BASE
+        // ==========================================
+
+        Product::updateOrCreate(
+            [
+                'company_id' => $company->id,
+                'name' => 'Hosting Web',
+            ],
+            [
+                'type' => 'service',
+                'description' => 'Servicio de alojamiento web para sitios y aplicaciones.',
+                'price_list' => 30.00,
+                'is_infinite' => true,
+                'stock' => 0,
+            ]
+        );
+
+        Product::updateOrCreate(
+            [
+                'company_id' => $company->id,
+                'name' => 'Desarrollo de Sitio Web',
+            ],
+            [
+                'type' => 'service',
+                'description' => 'Diseño, desarrollo e implementación de sitio web a medida.',
+                'price_list' => 100.00,
+                'is_infinite' => true,
+                'stock' => 0,
+            ]
+        );
+
+        Product::updateOrCreate(
+            [
+                'company_id' => $company->id,
+                'name' => 'Registro de Dominio',
+            ],
+            [
+                'type' => 'service',
+                'description' => 'Gestión y registro anual de nombre de dominio.',
+                'price_list' => 50.00,
+                'is_infinite' => true,
+                'stock' => 0,
+            ]
+        );
+
+        // ==========================================
+        // 7. SOLICITUD DE ACCESO
+        // ==========================================
+
+        AccessRequest::updateOrCreate(
+            [
+                'user_id' => $juan->id,
+                'company_id' => $company->id,
+            ],
+            [
+                'message' => 'Hola, me gustaría ingresar para revisar los servicios de hosting.',
+                'status' => 'pending',
+                'requested_at' => now(),
             ]
         );
     }
