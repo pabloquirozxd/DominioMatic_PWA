@@ -2,7 +2,7 @@
 import { ref, watch, nextTick } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 
-import Modal from '@/Components/UI/Modal.vue'
+import Modal from '@/Components/UI/Modal/Modal.vue'
 import CloseButton from '@/Components/UI/CloseButton.vue'
 
 import {
