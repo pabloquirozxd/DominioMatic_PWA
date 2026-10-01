@@ -11,34 +11,32 @@ return new class extends Migration
         Schema::create('clients', function (Blueprint $table) {
             $table->id();
 
-            // Empresa o Persona
-            $table->enum('type', [
-                'company',
-                'person'
-            ]);
-
-            // Solo si es empresa
-            $table->string('company_name')->nullable();
-
-            // NUEVOS CAMPOS (Estilo Zoho)
-            $table->string('company_phone')->nullable(); // Teléfono fijo/empresarial
-            $table->string('tax_id')->nullable();        // NIT / ID Impuestos
-            $table->string('payment_terms')->default('Due on Receipt'); // Términos de Pago
-            $table->text('notes')->nullable();           // Notas internas / Remarks
-
-            // Idioma principal
-            $table->string('language')->default('Español');
-
-            // Sitio web
-            $table->string('website')->nullable();
-
-            // Portal del cliente
-            $table->boolean('portal_enabled')->default(false);
-
-            // Empresa propietaria (multi tenant)
+            // Empresa propietaria (Multi-Tenant)
             $table->foreignId('company_id')
                 ->constrained()
                 ->cascadeOnDelete();
+
+            // Tipo de cuenta (Empresa o Persona)
+            $table->enum('type', [
+                'company',
+                'person'
+            ])->default('company');
+
+            // Nombre de la Empresa o Nombre Comercial
+            $table->string('company_name')->nullable();
+
+            // Datos fiscales y de contacto empresarial
+            $table->string('company_phone')->nullable(); // Teléfono fijo / empresarial
+            $table->string('tax_id')->nullable();        // NIT / ID Impuestos
+            $table->string('website')->nullable();       // Sitio web oficial
+
+            // Configuración comercial
+            $table->string('language')->default('Español');
+            $table->string('payment_terms')->default('Due on Receipt');
+            $table->text('notes')->nullable();           // Notas internas
+
+            // Acceso
+            $table->boolean('portal_enabled')->default(false);
 
             $table->timestamps();
         });

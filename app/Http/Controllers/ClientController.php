@@ -239,7 +239,7 @@ class ClientController extends Controller
             'company_name'   => $validated['type'] === 'company' 
                 ? $validated['company_name'] 
                 : trim($validated['first_name'] . ' ' . ($validated['last_name'] ?? '')),
-            'phone'          => $validated['company_phone'] ?? $validated['phone'] ?? null,
+            'company_phone'  => $validated['company_phone'] ?? $validated['phone'] ?? null,
             'tax_id'         => $validated['tax_id'] ?? null,
             'payment_terms'  => $validated['payment_terms'] ?? 'Due on Receipt',
             'notes'          => $validated['notes'] ?? null,
