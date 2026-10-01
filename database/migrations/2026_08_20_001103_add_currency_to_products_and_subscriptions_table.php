@@ -9,22 +9,30 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('products', function (Blueprint $table) {
-            $table->string('currency', 3)->default('USD')->after('price_list');
+            if (!Schema::hasColumn('products', 'currency')) {
+                $table->string('currency', 10)->default('USD')->after('price_list');
+            }
         });
 
         Schema::table('subscriptions', function (Blueprint $table) {
-            $table->string('currency', 3)->default('USD')->after('price_list');
+            if (!Schema::hasColumn('subscriptions', 'currency')) {
+                $table->string('currency', 10)->default('USD')->after('price_list');
+            }
         });
     }
 
     public function down(): void
     {
         Schema::table('products', function (Blueprint $table) {
-            $table->dropColumn('currency');
+            if (Schema::hasColumn('products', 'currency')) {
+                $table->dropColumn('currency');
+            }
         });
 
         Schema::table('subscriptions', function (Blueprint $table) {
-            $table->dropColumn('currency');
+            if (Schema::hasColumn('subscriptions', 'currency')) {
+                $table->dropColumn('currency');
+            }
         });
     }
 };

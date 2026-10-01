@@ -23,7 +23,7 @@ defineOptions({
 
 const props = defineProps({
     subscriptions: { type: Array, default: () => [] },
-    contacts: { type: Array, default: () => [] },
+    clients: { type: Array, default: () => [] }, // <-- Cambiado de contacts a clients
     products: { type: Array, default: () => [] },
 })
 
@@ -36,11 +36,11 @@ const filteredSubscriptions = computed(() => {
     const q = searchQuery.value.toLowerCase().trim()
 
     return props.subscriptions.filter((item) => {
-        const contactName = (item.contact_name || '').toLowerCase()
+        const clientName = (item.client_name || '').toLowerCase() // <-- client_name
         const productName = (item.product_name || '').toLowerCase()
 
         const matchesSearch =
-            !q || contactName.includes(q) || productName.includes(q)
+            !q || clientName.includes(q) || productName.includes(q)
 
         const matchesStatus =
             filterStatus.value === 'all'
@@ -235,7 +235,7 @@ function deleteSubscription(id) {
     <SubscriptionFormModal
         :show="showModal"
         :editing-subscription="selectedSubscription"
-        :contacts="contacts"
+        :clients="clients"
         :products="products"
         @close="showModal = false"
     />

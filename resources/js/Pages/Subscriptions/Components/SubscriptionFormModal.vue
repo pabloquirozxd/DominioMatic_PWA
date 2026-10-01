@@ -4,11 +4,13 @@ import PrimaryButton from '@/Components/UI/Buttons/PrimaryButton.vue'
 import SecondaryButton from '@/Components/UI/Buttons/SecondaryButton.vue'
 import {
     CreditCardIcon,
-    UserGroupIcon,
+    BuildingOfficeIcon,
     ShoppingBagIcon,
     CurrencyDollarIcon,
     TagIcon,
     CalendarIcon,
+    ClockIcon,
+    HashtagIcon,
 } from '@heroicons/vue/24/outline'
 import { useForm } from '@inertiajs/vue3'
 import { computed, ref, watch } from 'vue'
@@ -16,7 +18,7 @@ import { computed, ref, watch } from 'vue'
 const props = defineProps({
     show: { type: Boolean, default: false },
     editingSubscription: { type: Object, default: null },
-    contacts: { type: Array, default: () => [] },
+    clients: { type: Array, default: () => [] },
     products: { type: Array, default: () => [] },
 })
 
@@ -25,8 +27,10 @@ const emit = defineEmits(['close'])
 const discountType = ref('fixed')
 
 const form = useForm({
-    contact_id: '',
+    client_id: '',
     product_id: '',
+    quantity: 1,
+    billing_cycle: 'monthly',
     price_list: 0,
     currency: 'USD',
     discount: 0,
@@ -44,9 +48,7 @@ function normalizeCurrency(rawCurrency) {
 
     const c = String(rawCurrency).trim().toUpperCase()
 
-    if (
-        ['BOB', 'BS', 'BS.', 'BOLIVIANO', 'BOLIVIANOS'].includes(c)
-    ) {
+    if (['BOB', 'BS', 'BS.', 'BOLIVIANO', 'BOLIVIANOS'].includes(c)) {
         return 'BOB'
     }
 
@@ -67,8 +69,10 @@ watch(
                     (p) => String(p.id) === String(sub.product_id)
                 )
 
-                form.contact_id = sub.contact_id || ''
+                form.client_id = sub.client_id || ''
                 form.product_id = sub.product_id || ''
+                form.quantity = sub.quantity ?? 1
+                form.billing_cycle = sub.billing_cycle || 'monthly'
                 form.price_list =
                     sub.price_list ??
                     (associatedProduct?.price_list ?? 0)
@@ -85,6 +89,8 @@ watch(
                 form.status = sub.status || 'active'
             } else {
                 form.reset()
+                form.quantity = 1
+                form.billing_cycle = 'monthly'
                 form.currency = 'USD'
                 form.status = 'active'
             }
@@ -97,12 +103,8 @@ function formatDateForInput(dateString) {
 
     if (dateString.includes('/')) {
         const parts = dateString.split('/')
-
         if (parts.length === 3) {
-            return `${parts[2]}-${parts[1].padStart(
-                2,
-                '0'
-            )}-${parts[0].padStart(2, '0')}`
+            return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`
         }
     }
 
@@ -122,30 +124,54 @@ function handleProductChange(event) {
     }
 }
 
+function autoCalculateExpiration() {
+    if (!form.starts_at || form.billing_cycle === 'custom') return
+
+    const startDate = new Date(form.starts_at + 'T00:00:00')
+    if (isNaN(startDate.getTime())) return
+
+    const endDate = new Date(startDate)
+
+    if (form.billing_cycle === 'weekly') {
+        endDate.setDate(endDate.getDate() + 7)
+    } else if (form.billing_cycle === 'monthly') {
+        endDate.setMonth(endDate.getMonth() + 1)
+    } else if (form.billing_cycle === 'yearly') {
+        endDate.setFullYear(endDate.getFullYear() + 1)
+    }
+
+    form.expires_at = endDate.toISOString().split('T')[0]
+}
+
 const currencySymbol = computed(() =>
     form.currency === 'BOB' ? 'Bs.' : '$'
 )
 
-const calculatedNetTotal = computed(() => {
+const calculatedSubtotal = computed(() => {
     const price = parseFloat(form.price_list) || 0
+    const qty = parseInt(form.quantity) || 1
+    return price * qty
+})
+
+const calculatedNetTotal = computed(() => {
+    const baseTotal = calculatedSubtotal.value
     const discountVal = parseFloat(form.discount) || 0
 
     if (discountType.value === 'percent') {
-        const discountAmount = price * (discountVal / 100)
-
-        return Math.max(0, price - discountAmount).toFixed(2)
+        const discountAmount = baseTotal * (discountVal / 100)
+        return Math.max(0, baseTotal - discountAmount).toFixed(2)
     }
 
-    return Math.max(0, price - discountVal).toFixed(2)
+    return Math.max(0, baseTotal - discountVal).toFixed(2)
 })
 
 function submit() {
-    const price = parseFloat(form.price_list) || 0
+    const baseTotal = calculatedSubtotal.value
     const rawDiscount = parseFloat(form.discount) || 0
 
     form.discount =
         discountType.value === 'percent'
-            ? price * (rawDiscount / 100)
+            ? baseTotal * (rawDiscount / 100)
             : rawDiscount
 
     if (isEditing.value) {
@@ -156,7 +182,6 @@ function submit() {
                 onSuccess: () => emit('close'),
             }
         )
-
         return
     }
 
@@ -187,7 +212,6 @@ const labelClass =
                     <CreditCardIcon
                         class="h-5 w-5 text-[#0072A8] dark:text-[#4FC3F7]"
                     />
-
                     {{
                         isEditing
                             ? 'Editar Suscripción'
@@ -196,49 +220,51 @@ const labelClass =
                 </h3>
 
                 <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                    Configura el ciclo, precio y estado de la afiliación.
+                    Configura el cliente, ítem, cantidad y ciclo de cobro de la suscripción.
                 </p>
             </div>
 
             <form class="mt-6 space-y-5" @submit.prevent="submit">
-                <!-- Cliente + Producto -->
+                <!-- Empresa/Cliente + Producto/Servicio -->
                 <div
                     class="space-y-4 rounded-2xl border border-white/60 bg-white/25 p-4 dark:border-white/[0.06] dark:bg-white/[0.02]"
                 >
+                    <!-- Cliente (Empresa) -->
                     <div>
                         <label :class="labelClass">
-                            <UserGroupIcon
+                            <BuildingOfficeIcon
                                 class="h-3.5 w-3.5 text-[#0072A8] dark:text-[#4FC3F7]"
                             />
-                            Contacto / Cliente *
+                            Empresa / Cliente *
                         </label>
 
                         <select
-                            v-model="form.contact_id"
+                            v-model="form.client_id"
                             :class="inputClass"
                             required
                         >
                             <option value="" disabled>
-                                Seleccionar contacto...
+                                Seleccionar empresa...
                             </option>
 
                             <option
-                                v-for="contact in contacts"
-                                :key="contact.id"
-                                :value="contact.id"
+                                v-for="client in clients"
+                                :key="client.id"
+                                :value="client.id"
                             >
-                                {{ contact.name }}
+                                {{ client.company_name || client.name }}
                             </option>
                         </select>
 
                         <span
-                            v-if="form.errors.contact_id"
+                            v-if="form.errors.client_id"
                             class="mt-1 text-xs text-rose-500"
                         >
-                            {{ form.errors.contact_id }}
+                            {{ form.errors.client_id }}
                         </span>
                     </div>
 
+                    <!-- Producto o Servicio -->
                     <div>
                         <label :class="labelClass">
                             <ShoppingBagIcon
@@ -263,11 +289,7 @@ const labelClass =
                                 :value="product.id"
                             >
                                 {{ product.name }} ({{
-                                    normalizeCurrency(
-                                        product.currency
-                                    ) === 'BOB'
-                                        ? 'Bs.'
-                                        : '$'
+                                    normalizeCurrency(product.currency) === 'BOB' ? 'Bs.' : '$'
                                 }}{{ product.price_list }})
                             </option>
                         </select>
@@ -281,14 +303,59 @@ const labelClass =
                     </div>
                 </div>
 
-                <!-- Precio + Moneda + Descuento -->
+                <!-- Cantidad y Frecuencia de Cobranza -->
+                <div class="grid gap-4 md:grid-cols-2">
+                    <!-- Cantidad (Unidades / Licencias / Cuentas) -->
+                    <div>
+                        <label :class="labelClass">
+                            <HashtagIcon class="h-3.5 w-3.5" />
+                            Cantidad (Unidades / Licencias) *
+                        </label>
+
+                        <input
+                            v-model.number="form.quantity"
+                            type="number"
+                            min="1"
+                            step="1"
+                            placeholder="1"
+                            :class="inputClass"
+                            required
+                        />
+
+                        <span
+                            v-if="form.errors.quantity"
+                            class="mt-1 text-xs text-rose-500"
+                        >
+                            {{ form.errors.quantity }}
+                        </span>
+                    </div>
+
+                    <!-- Ciclo / Frecuencia de Cobro -->
+                    <div>
+                        <label :class="labelClass">
+                            <ClockIcon class="h-3.5 w-3.5" />
+                            Frecuencia de Cobro *
+                        </label>
+
+                        <select
+                            v-model="form.billing_cycle"
+                            :class="inputClass"
+                            @change="autoCalculateExpiration"
+                        >
+                            <option value="weekly">Semanal (+7 días)</option>
+                            <option value="monthly">Mensual (+1 mes)</option>
+                            <option value="yearly">Anual (+1 año)</option>
+                            <option value="custom">Personalizable (Fecha exacta)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Precio Unitario + Moneda + Descuento -->
                 <div class="grid gap-4 md:grid-cols-3">
                     <div>
                         <label :class="labelClass">
-                            <CurrencyDollarIcon
-                                class="h-3.5 w-3.5"
-                            />
-                            Precio Base
+                            <CurrencyDollarIcon class="h-3.5 w-3.5" />
+                            Precio Unitario
                         </label>
 
                         <input
@@ -345,21 +412,25 @@ const labelClass =
                     </div>
                 </div>
 
-                <!-- Resumen de cobro -->
+                <!-- Resumen de cobro calculado -->
                 <div
-                    class="flex items-center justify-between rounded-2xl border border-[#0072A8]/20 bg-[#0072A8]/[0.06] p-3.5 text-xs dark:border-[#0072A8]/25 dark:bg-[#0072A8]/[0.10]"
+                    class="rounded-2xl border border-[#0072A8]/20 bg-[#0072A8]/[0.06] p-4 text-xs dark:border-[#0072A8]/25 dark:bg-[#0072A8]/[0.10]"
                 >
-                    <span
-                        class="font-medium text-slate-600 dark:text-slate-300"
-                    >
-                        Total a cobrar por periodo:
-                    </span>
+                    <div class="flex items-center justify-between text-slate-600 dark:text-slate-300">
+                        <span>
+                            Subtotal ({{ form.quantity || 1 }} x {{ currencySymbol }} {{ form.price_list }}):
+                        </span>
+                        <span class="font-semibold">
+                            {{ currencySymbol }} {{ calculatedSubtotal.toFixed(2) }}
+                        </span>
+                    </div>
 
-                    <span
-                        class="text-base font-semibold tracking-[-0.02em] text-[#0072A8] dark:text-[#4FC3F7]"
-                    >
-                        {{ currencySymbol }} {{ calculatedNetTotal }}
-                    </span>
+                    <div class="mt-2 flex items-center justify-between border-t border-[#0072A8]/15 pt-2 text-sm font-bold text-[#0072A8] dark:text-[#4FC3F7]">
+                        <span>Total Neto a Cobrar por Periodo:</span>
+                        <span class="text-base tracking-[-0.02em]">
+                            {{ currencySymbol }} {{ calculatedNetTotal }}
+                        </span>
+                    </div>
                 </div>
 
                 <!-- Fechas -->
@@ -375,19 +446,22 @@ const labelClass =
                             type="date"
                             :class="inputClass"
                             required
+                            @change="autoCalculateExpiration"
                         />
                     </div>
 
                     <div>
                         <label :class="labelClass">
                             <CalendarIcon class="h-3.5 w-3.5" />
-                            Fecha de Expiración
+                            Fecha de Expiración / Vencimiento
                         </label>
 
                         <input
                             v-model="form.expires_at"
                             type="date"
-                            :class="inputClass"
+                            :readonly="form.billing_cycle !== 'custom'"
+                            :disabled="form.billing_cycle !== 'custom'"
+                            :class="form.billing_cycle !== 'custom' ? disabledInputClass : inputClass"
                             required
                         />
                     </div>

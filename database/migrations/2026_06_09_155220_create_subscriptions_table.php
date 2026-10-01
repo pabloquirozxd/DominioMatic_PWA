@@ -10,26 +10,37 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void
-{
-    Schema::create('subscriptions', function (Blueprint $table) {
-        $table->id();
-        $table->foreignId('company_id')->constrained()->onDelete('cascade');
-        $table->foreignId('contact_id')->constrained()->onDelete('cascade'); // El cliente/contacto
-        $table->foreignId('product_id')->constrained()->onDelete('cascade'); // El servicio contratado
+    {
+        Schema::create('subscriptions', function (Blueprint $table) {
+            $table->id();
 
-        // Cálculo Algebraico Automatizado (Req. 2 de tu informe)
-        $table->decimal('price_list', 10, 2);
-        $table->decimal('discount', 10, 2)->default(0.00); // Monto fijo o calculado de descuento
-        $table->decimal('total_neto', 10, 2); // Precio Final: (price_list - discount)
+            // Empresa propietaria / Multi-Tenant
+            $table->foreignId('company_id')->constrained()->onDelete('cascade');
 
-        // Control Cronológico de Alertas Preventivas
-        $table->date('starts_at');
-        $table->date('expires_at'); // Fecha crítica para las Alertas Automatizadas
-        $table->enum('status', ['active', 'expired', 'suspended'])->default('active');
+            // Cliente (Empresa) vinculado
+            $table->foreignId('client_id')->constrained()->onDelete('cascade');
 
-        $table->timestamps();
-    });
-}
+            // Servicio o Producto contratado
+            $table->foreignId('product_id')->constrained()->onDelete('cascade');
+
+            // Cantidad y Frecuencia de Cobro
+            $table->integer('quantity')->default(1);
+            $table->enum('billing_cycle', ['weekly', 'monthly', 'yearly', 'custom'])->default('monthly');
+
+            // Cálculos y Moneda
+            $table->decimal('price_list', 10, 2);
+            $table->string('currency', 10)->default('USD');
+            $table->decimal('discount', 10, 2)->default(0.00);
+            $table->decimal('total_neto', 10, 2); // (price_list * quantity) - discount
+
+            // Control Cronológico
+            $table->date('starts_at');
+            $table->date('expires_at');
+            $table->enum('status', ['active', 'expired', 'suspended'])->default('active');
+
+            $table->timestamps();
+        });
+    }
 
     /**
      * Reverse the migrations.

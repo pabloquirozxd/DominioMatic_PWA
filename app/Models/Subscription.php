@@ -13,8 +13,10 @@ class Subscription extends Model
 
     protected $fillable = [
         'company_id',
-        'contact_id',
+        'client_id',
         'product_id',
+        'quantity',
+        'billing_cycle',
         'price_list',
         'currency',
         'discount',
@@ -28,6 +30,7 @@ class Subscription extends Model
         'price_list' => 'decimal:2',
         'discount' => 'decimal:2',
         'total_neto' => 'decimal:2',
+        'quantity' => 'integer',
         'starts_at' => 'date',
         'expires_at' => 'date',
     ];
@@ -37,8 +40,12 @@ class Subscription extends Model
         parent::boot();
 
         static::saving(function ($subscription) {
-            $subscription->total_neto =
-                $subscription->price_list - $subscription->discount;
+            $price = (float) ($subscription->price_list ?? 0);
+            $qty = (int) ($subscription->quantity ?? 1);
+            $discount = (float) ($subscription->discount ?? 0);
+
+            // Total Neto = (Precio Unitario x Cantidad) - Descuento
+            $subscription->total_neto = max(0, ($price * $qty) - $discount);
         });
     }
 
@@ -66,9 +73,9 @@ class Subscription extends Model
         return 'active';
     }
 
-    public function contact(): BelongsTo
+    public function client(): BelongsTo
     {
-        return $this->belongsTo(Contact::class);
+        return $this->belongsTo(Client::class);
     }
 
     public function product(): BelongsTo
