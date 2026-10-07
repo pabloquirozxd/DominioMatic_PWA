@@ -9,6 +9,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('subscriptions', function (Blueprint $table) {
+            // Asegurar la presencia de client_id
+            if (!Schema::hasColumn('subscriptions', 'client_id')) {
+                $table->foreignId('client_id')->nullable()->constrained('clients')->onDelete('cascade')->after('company_id');
+            }
+
             // Si la columna billing_cycle existe, se modifica; si no existe, se crea.
             if (Schema::hasColumn('subscriptions', 'billing_cycle')) {
                 $table->string('billing_cycle')->default('monthly')->change();
