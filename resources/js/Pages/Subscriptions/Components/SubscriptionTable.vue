@@ -1,3 +1,4 @@
+<!-- resources/js/Pages/Subscriptions/Components/SubscriptionTable.vue -->
 <script setup>
 import { PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/outline'
 
@@ -97,7 +98,7 @@ function formatMoney(amount, currency) {
                         <span
                             class="text-sm font-semibold text-slate-950 dark:text-white"
                         >
-                            {{ sub.contact_name }}
+                            {{ sub.client_name || sub.contact_name || 'Sin Empresa' }}
                         </span>
                     </td>
 
