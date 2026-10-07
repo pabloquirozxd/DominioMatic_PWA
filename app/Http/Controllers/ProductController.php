@@ -7,6 +7,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Imports\ProductsImport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ProductController extends Controller
 {
@@ -115,5 +117,18 @@ class ProductController extends Controller
         $product->delete();
 
         return redirect()->route('products.index');
+    }
+
+    public function import(Request $request): RedirectResponse
+    {
+        $companyId = $this->getActiveCompanyId($request);
+
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:csv,xlsx,xls', 'max:10240'],
+        ]);
+
+        Excel::import(new ProductsImport($companyId), $request->file('file'));
+
+        return redirect()->route('products.index')->with('success', 'Catálogo importado correctamente.');
     }
 }

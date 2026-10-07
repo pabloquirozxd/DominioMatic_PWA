@@ -1,18 +1,21 @@
+<!-- resources/js/Layouts/AuthenticatedLayout.vue -->
 <script setup>
 import { ref } from 'vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
+import Footer from '@/Components/Footer.vue';
 import { Link, usePage } from '@inertiajs/vue3';
-import Toast from '@/Components/UI/Toast.vue'
+import Toast from '@/Components/UI/Toast.vue';
 
 const showingNavigationDropdown = ref(false);
 const page = usePage();
 </script>
 
 <template>
-    <div class="min-h-screen bg-[#f4f5f7] text-gray-900 transition-colors duration-300 dark:bg-[#060607] dark:text-white">
+    <!-- Contenedor flex en columna de pantalla completa -->
+    <div class="flex min-h-screen flex-col bg-[#f4f5f7] text-gray-900 transition-colors duration-300 dark:bg-[#060607] dark:text-white">
         <!-- =====================================================
             NAV — Sticky, Siri-grade glass with iridescent edge
         ====================================================== -->
@@ -51,7 +54,6 @@ const page = usePage();
                             Dashboard
                         </NavLink>
 
-
                         <NavLink
                             :href="route('clients.index')" :active="route().current('clients.*')">
                             Clientes
@@ -77,7 +79,6 @@ const page = usePage();
                         >
                             Administración
                         </NavLink>
-                                                
                     </div>
 
                     <div class="hidden md:flex md:items-center">
@@ -216,9 +217,9 @@ const page = usePage();
         </header>
 
         <!-- =====================================================
-            MAIN — Page transition (Inertia navigation)
+            MAIN — flex-1 para expandirse y empujar el footer
         ====================================================== -->
-        <main class="relative bg-[#f4f5f7] dark:bg-[#060607]">
+        <main class="relative flex-1 bg-[#f4f5f7] dark:bg-[#060607]">
             <Transition
                 mode="out-in"
                 enter-active-class="transition-[opacity,transform] duration-200 ease-out"
@@ -233,6 +234,9 @@ const page = usePage();
                 </div>
             </Transition>
         </main>
+
+        <!-- FOOTER GLOBAL -->
+        <Footer />
 
         <Toast />
     </div>

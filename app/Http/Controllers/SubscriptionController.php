@@ -8,8 +8,10 @@ use App\Models\Subscription;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SubscriptionController extends Controller
 {
@@ -173,5 +175,116 @@ class SubscriptionController extends Controller
         $subscription->delete();
 
         return redirect()->route('subscriptions.index')->with('success', 'Suscripción eliminada.');
+    }
+
+    /**
+     * Procesar archivo CSV para la importación masiva de suscripciones.
+     */
+    public function import(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
+        ]);
+
+        $companyId = $this->getCompanyId();
+        $file = $request->file('file');
+        
+        $handle = fopen($file->getRealPath(), 'r');
+        $header = fgetcsv($handle, 1000, ',');
+
+        if (!$header) {
+            return back()->withErrors(['file' => 'El archivo CSV está vacío o corrupto.']);
+        }
+
+        // Limpiar BOM y espacios
+        $header = array_map(fn($col) => trim(preg_replace('/\x{FEFF}/u', '', $col)), $header);
+
+        DB::beginTransaction();
+
+        try {
+            while (($row = fgetcsv($handle, 1000, ',')) !== false) {
+                if (empty(array_filter($row))) {
+                    continue; // Omitir filas vacías
+                }
+
+                $data = array_combine($header, $row);
+
+                $clientId = (int) ($data['client_id'] ?? 0);
+                $productId = (int) ($data['product_id'] ?? 0);
+                $quantity = max(1, (int) ($data['quantity'] ?? 1));
+                $priceList = (float) ($data['price_list'] ?? 0);
+                $discount = (float) ($data['discount'] ?? 0);
+                $currency = strtoupper(trim($data['currency'] ?? 'USD'));
+                if (!in_array($currency, ['USD', 'BOB'])) {
+                    $currency = 'USD';
+                }
+
+                $totalNeto = max(0, ($priceList * $quantity) - $discount);
+
+                Subscription::create([
+                    'company_id' => $companyId,
+                    'client_id' => $clientId,
+                    'product_id' => $productId,
+                    'quantity' => $quantity,
+                    'billing_cycle' => $data['billing_cycle'] ?? 'monthly',
+                    'price_list' => $priceList,
+                    'currency' => $currency,
+                    'discount' => $discount,
+                    'total_neto' => $totalNeto,
+                    'starts_at' => $data['starts_at'] ?? now()->format('Y-m-d'),
+                    'expires_at' => $data['expires_at'] ?? now()->addMonth()->format('Y-m-d'),
+                    'status' => $data['status'] ?? 'active',
+                ]);
+            }
+
+            fclose($handle);
+            DB::commit();
+
+            return redirect()->route('subscriptions.index')->with('success', 'Suscripciones importadas con éxito.');
+        } catch (\Exception $e) {
+            fclose($handle);
+            DB::rollBack();
+
+            return back()->withErrors(['file' => 'Error al procesar el archivo CSV. Verifica las cabeceras e IDs vinculados.']);
+        }
+    }
+
+    /**
+     * Descargar la plantilla CSV oficial para importación de suscripciones.
+     */
+    public function downloadTemplate(): StreamedResponse
+    {
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="plantilla_importacion_suscripciones.csv"',
+        ];
+
+        $columns = [
+            'client_id',
+            'product_id',
+            'quantity',
+            'billing_cycle',
+            'price_list',
+            'currency',
+            'discount',
+            'starts_at',
+            'expires_at',
+            'status',
+        ];
+
+        $callback = function () use ($columns) {
+            $file = fopen('php://output', 'w');
+            
+            // Incluir BOM para soportar tildes y caracteres UTF-8 en Excel
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            fputcsv($file, $columns);
+            // Fila de ejemplo
+            fputcsv($file, [1, 1, 2, 'monthly', 100.00, 'USD', 0, '2026-10-01', '2026-11-01', 'active']);
+            
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }

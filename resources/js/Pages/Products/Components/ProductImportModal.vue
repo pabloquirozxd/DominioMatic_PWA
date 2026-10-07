@@ -1,10 +1,20 @@
+<!-- resources/js/Pages/Products/Components/ProductImportModal.vue -->
 <script setup>
-import PrimaryButton from '@/Components/UI/Buttons/PrimaryButton.vue'
-import SecondaryButton from '@/Components/UI/Buttons/SecondaryButton.vue'
-import { CloudArrowUpIcon, XMarkIcon } from '@heroicons/vue/24/outline'
+import { ref } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 
-defineProps({
+import Modal from '@/Components/UI/Modal/Modal.vue'
+import PrimaryButton from '@/Components/UI/Buttons/PrimaryButton.vue'
+import SecondaryButton from '@/Components/UI/Buttons/SecondaryButton.vue'
+
+import {
+    ArrowUpTrayIcon,
+    ArrowDownTrayIcon,
+    DocumentTextIcon,
+    ExclamationCircleIcon,
+} from '@heroicons/vue/24/outline'
+
+const props = defineProps({
     show: {
         type: Boolean,
         default: false,
@@ -13,64 +23,173 @@ defineProps({
 
 const emit = defineEmits(['close'])
 
-const importForm = useForm({
+const fileInputRef = ref(null)
+const selectedFile = ref(null)
+
+const form = useForm({
     file: null,
 })
 
-function handleFileChange(e) {
-    const file = e.target.files[0]
-    if (file) importForm.file = file
+const handleFileSelect = (event) => {
+    const file = event.target.files[0]
+    if (file) {
+        selectedFile.value = file
+        form.file = file
+        form.clearErrors('file')
+    }
 }
 
-function submitImport() {
-    if (!importForm.file) return
-    importForm.post(route('products.import'), {
+const handleDrop = (event) => {
+    const file = event.dataTransfer?.files[0]
+    if (file && (file.type === 'text/csv' || file.name.endsWith('.csv') || file.name.endsWith('.xlsx'))) {
+        selectedFile.value = file
+        form.file = file
+        form.clearErrors('file')
+    }
+}
+
+const closeModal = () => {
+    form.reset()
+    form.clearErrors()
+    selectedFile.value = null
+    emit('close')
+}
+
+const getTemplateRoute = () => {
+    try {
+        return route().has('products.import.template')
+            ? route('products.import.template')
+            : route().has('products.template')
+            ? route('products.template')
+            : '#'
+    } catch (e) {
+        return '#'
+    }
+}
+
+const submit = () => {
+    if (!form.file) return
+
+    form.post(route('products.import'), {
         preserveScroll: true,
         onSuccess: () => {
-            importForm.reset()
-            emit('close')
+            closeModal()
         },
+        onError: () => {}
     })
 }
 </script>
 
 <template>
-    <div
-        v-if="show"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-md transition-all"
-    >
-        <div class="w-full max-w-md rounded-3xl bg-white/90 dark:bg-[#1c1c1e]/90 p-6 shadow-2xl border border-white/60 dark:border-white/10 backdrop-blur-2xl">
-            <div class="flex items-start justify-between">
-                <div>
-                    <h3 class="text-xl font-bold text-gray-900 dark:text-white">Importar Catálogo</h3>
-                    <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Cargue un archivo .csv o .xlsx para carga masiva.</p>
-                </div>
-                <button type="button" class="rounded-xl p-1 text-gray-400 hover:bg-black/5 dark:hover:bg-white/10" @click="emit('close')">
-                    <XMarkIcon class="h-5 w-5" />
-                </button>
+    <Modal :show="show" max-width="xl" @close="closeModal">
+        <template #header>
+            <div class="px-1">
+                <h2 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+                    Importar catálogo
+                </h2>
+                <p class="mt-2 text-base text-gray-600 dark:text-gray-300">
+                    Sube un archivo CSV o XLSX para registrar productos y servicios masivamente.
+                </p>
             </div>
+        </template>
 
-            <form class="mt-6 space-y-4" @submit.prevent="submitImport">
-                <div class="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-black/10 dark:border-white/10 p-6 text-center hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition">
-                    <CloudArrowUpIcon class="h-10 w-10 text-[#0047BA]" />
-                    <label class="mt-2 cursor-pointer text-xs font-semibold text-[#0047BA] hover:underline">
-                        <span>Seleccionar archivo local</span>
-                        <input type="file" accept=".csv, .xlsx" class="sr-only" @change="handleFileChange" />
-                    </label>
-                    <p class="mt-1 text-[11px] text-gray-400">
-                        {{ importForm.file ? importForm.file.name : 'CSV o XLSX' }}
+        <form @submit.prevent="submit" class="space-y-8 px-1">
+            <!-- Zona Drag & Drop -->
+            <div
+                @click="fileInputRef.click()"
+                @dragover.prevent
+                @drop.prevent="handleDrop"
+                class="group relative cursor-pointer overflow-hidden rounded-3xl border border-black/10 dark:border-white/20 bg-white/40 dark:bg-white/5 backdrop-blur-xl p-10 text-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] transition-all duration-300 hover:border-[#007AFF]/50 hover:bg-white/60 dark:hover:bg-white/10 hover:shadow-lg hover:shadow-[#007AFF]/5"
+            >
+                <input
+                    ref="fileInputRef"
+                    type="file"
+                    accept=".csv, .xlsx"
+                    class="hidden"
+                    @change="handleFileSelect"
+                />
+
+                <div v-if="!selectedFile" class="flex flex-col items-center">
+                    <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#007AFF]/10 text-[#007AFF] shadow-inner transition-transform duration-300 group-hover:scale-110 group-hover:bg-[#007AFF]/15">
+                        <ArrowUpTrayIcon class="h-8 w-8 stroke-[2]" />
+                    </div>
+                    <p class="text-base font-semibold text-gray-900 dark:text-white">
+                        Haz clic o arrastra tu archivo CSV o XLSX aquí
+                    </p>
+                    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                        Soporta codificación UTF-8 hasta 5MB
                     </p>
                 </div>
 
-                <div class="flex items-center justify-end gap-2 pt-2">
-                    <SecondaryButton type="button" @click="emit('close')">
-                        Cancelar
-                    </SecondaryButton>
-                    <PrimaryButton type="submit" :disabled="!importForm.file || importForm.processing">
-                        Procesar Carga
-                    </PrimaryButton>
+                <div v-else class="flex items-center justify-between rounded-2xl border border-black/5 dark:border-white/10 bg-black/5 dark:bg-black/20 p-4 backdrop-blur-md">
+                    <div class="flex items-center gap-4">
+                        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-[#007AFF] text-white shadow-md shadow-[#007AFF]/20">
+                            <DocumentTextIcon class="h-6 w-6 stroke-[2]" />
+                        </div>
+                        <div class="text-left">
+                            <p class="text-base font-semibold text-gray-900 dark:text-white truncate max-w-[200px] sm:max-w-[300px]">
+                                {{ selectedFile.name }}
+                            </p>
+                            <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+                                {{ (selectedFile.size / 1024).toFixed(1) }} KB
+                            </p>
+                        </div>
+                    </div>
+
+                    <button
+                        type="button"
+                        @click.stop="selectedFile = null; form.file = null"
+                        class="rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-500 transition-colors hover:bg-red-500/10 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400"
+                    >
+                        Cambiar
+                    </button>
                 </div>
-            </form>
-        </div>
-    </div>
+            </div>
+
+            <div v-if="form.errors.file" class="flex items-center gap-2 rounded-xl bg-red-50 dark:bg-red-500/10 p-3 text-sm font-medium text-red-600 dark:text-red-400">
+                <ExclamationCircleIcon class="h-5 w-5 shrink-0" />
+                <span>{{ form.errors.file }}</span>
+            </div>
+
+            <!-- Panel Informativo Glassmorphism con Cabeceras Actualizadas -->
+            <div class="rounded-2xl border border-black/5 dark:border-white/10 bg-black/5 dark:bg-white/[0.03] p-5 text-sm space-y-3 backdrop-blur-md">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <span class="font-semibold text-gray-900 dark:text-gray-200">
+                        Cabeceras del archivo (primera fila):
+                    </span>
+
+                    <a
+                        :href="getTemplateRoute()"
+                        download
+                        class="inline-flex items-center gap-1.5 rounded-lg text-sm font-semibold text-[#007AFF] transition hover:text-[#0056b3] dark:hover:text-[#3399ff] hover:underline shrink-0"
+                    >
+                        <ArrowDownTrayIcon class="h-4 w-4 stroke-[2.5]" />
+                        Descargar plantilla
+                    </a>
+                </div>
+
+                <div class="overflow-x-auto rounded-xl bg-white/50 dark:bg-black/30 p-3 shadow-inner">
+                    <p class="whitespace-nowrap font-mono text-[13px] text-[#007AFF] dark:text-[#3399ff]">
+                        type, name, description, price_list, currency, is_infinite, stock
+                    </p>
+                </div>
+
+                <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                    • <strong>type:</strong> <code>service</code> (Servicio) o <code>product</code> (Producto).<br />
+                    • <strong>is_infinite:</strong> <code>1</code> (Ilimitado) o <code>0</code> (Finito).<br />
+                    • <strong>stock:</strong> Requerido si <code>type=product</code> e <code>is_infinite=0</code>.
+                </p>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-2">
+                <SecondaryButton @click="closeModal" type="button">
+                    Cancelar
+                </SecondaryButton>
+
+                <PrimaryButton :disabled="!selectedFile" :loading="form.processing" type="submit">
+                    Importar registros
+                </PrimaryButton>
+            </div>
+        </form>
+    </Modal>
 </template>

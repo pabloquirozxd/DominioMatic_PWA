@@ -8,17 +8,33 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class ContactsExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize
+class ContactsExport implements FromCollection, WithHeadings, WithMapping, WithStyles, ShouldAutoSize
 {
     public function __construct(protected $user)
     {
     }
 
+    /**
+     * Obtener el ID de la empresa activa del usuario.
+     */
+    private function getCompanyId(): ?int
+    {
+        if (session()->has('active_company_id')) {
+            return (int) session('active_company_id');
+        }
+
+        return $this->user->companies()->first()?->id;
+    }
+
     public function collection(): Collection
     {
+        $companyId = $this->getCompanyId();
+
         return Contact::query()
-            ->where('company_id', $this->user->company_id)
+            ->where('company_id', $companyId)
             ->orderBy('created_at', 'desc')
             ->get();
     }
@@ -30,7 +46,7 @@ class ContactsExport implements FromCollection, WithHeadings, WithMapping, Shoul
             'Apellido',
             'Correo',
             'Teléfono',
-            'Tipo',
+            'Tipo / Rol',
             'Cargo / Posición',
             'Fecha de registro',
         ];
@@ -40,12 +56,25 @@ class ContactsExport implements FromCollection, WithHeadings, WithMapping, Shoul
     {
         return [
             $contact->first_name,
-            $contact->last_name,
+            $contact->last_name ?? '',
             $contact->email,
-            $contact->phone,
-            $contact->type,
-            $contact->position,
+            $contact->phone ?? '—',
+            $contact->is_primary ? 'Principal' : 'Secundario',
+            $contact->position ?? '—',
             optional($contact->created_at)->format('d/m/Y H:i'),
+        ];
+    }
+
+    public function styles(Worksheet $sheet)
+    {
+        return [
+            1 => [
+                'font' => ['bold' => true, 'color' => ['argb' => 'FFFFFF']],
+                'fill' => [
+                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'startColor' => ['argb' => '0072A8'],
+                ],
+            ],
         ];
     }
 }

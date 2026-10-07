@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ClientImportController;
+use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductController;
@@ -92,12 +93,15 @@ Route::middleware(['auth', 'verified', 'company.active'])->group(function () {
     Route::post('/products', [ProductController::class, 'store'])->name('products.store');
     Route::put('/products/{product}', [ProductController::class, 'update'])->name('products.update');
     Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
+    Route::post('/products/import', [ProductController::class, 'import'])->name('products.import');
 
     // Suscripciones
     Route::get('/subscriptions', [SubscriptionController::class, 'index'])->name('subscriptions.index');
     Route::post('/subscriptions', [SubscriptionController::class, 'store'])->name('subscriptions.store');
     Route::put('/subscriptions/{subscription}', [SubscriptionController::class, 'update'])->name('subscriptions.update');
     Route::delete('/subscriptions/{subscription}', [SubscriptionController::class, 'destroy'])->name('subscriptions.destroy');
+    Route::get('/subscriptions/import/template', [SubscriptionController::class, 'downloadTemplate'])->name('subscriptions.import.template');
+    Route::post('/subscriptions/import', [SubscriptionController::class, 'import'])->name('subscriptions.import');
 
     // Clientes & Importación
     Route::get('/clients', [ClientController::class, 'index'])->name('clients.index');
@@ -107,6 +111,7 @@ Route::middleware(['auth', 'verified', 'company.active'])->group(function () {
     Route::patch('/clients/{client}/contacts/{contact}/primary', [ClientController::class, 'setPrimaryContact'])->name('clients.contacts.set-primary');
     Route::get('/clients/import/template', [ClientImportController::class, 'downloadTemplate'])->name('clients.import.template');
     Route::post('/clients/import', [ClientImportController::class, 'store'])->name('clients.import');
+    
 
     // Reportes
     Route::get('/reports/contacts/pdf', [ReportController::class, 'contactsPdf'])->name('reports.contacts.pdf');
@@ -117,6 +122,7 @@ Route::middleware(['auth', 'verified', 'company.active'])->group(function () {
     Route::get('/reports/subscriptions/excel', [ReportController::class, 'subscriptionsExcel'])->name('reports.subscriptions.excel');
     Route::get('/reports/clients/pdf', [ReportController::class, 'clientsPdf'])->name('reports.clients.pdf');
     Route::get('/reports/clients/excel', [ReportController::class, 'clientsExcel'])->name('reports.clients.excel');
+    
 
     // Admin
     Route::post('/admin/companies', [CompanyController::class, 'store'])->name('admin.companies.store');
