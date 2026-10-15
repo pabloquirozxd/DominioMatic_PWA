@@ -3,145 +3,30 @@
 namespace App\Http\Controllers;
 
 use App\Models\Client;
+use App\Models\ImportLog;
+use App\Services\CsvImportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ClientImportController extends Controller
 {
+    public function __construct(protected CsvImportService $importService)
+    {
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'file' => ['required', 'file', 'mimes:csv,txt', 'max:5120'], // Máx 5MB
+            'file' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
         ]);
 
-        $file = $request->file('file');
-        $filePath = $file->getRealPath();
+        $user = Auth::user();
+        // Fallback robusto para company_id si $user->company_id es null
+        $companyId = $user->company_id ?? $user->companies()->first()?->id ?? 1;
 
-        // 1. Detección automática de delimitador (coma ',' o punto y coma ';')
-        $firstLine = file_get_contents($filePath, false, null, 0, 2048) ?: '';
-        $delimiter = (substr_count($firstLine, ';') > substr_count($firstLine, ',')) ? ';' : ',';
-
-        $handle = fopen($filePath, 'r');
-        if (!$handle) {
-            return back()->withErrors(['file' => 'No se pudo abrir el archivo subido.']);
-        }
-
-        // 2. Leer la cabecera
-        $header = fgetcsv($handle, 0, $delimiter);
-
-        if (!$header || empty(array_filter($header))) {
-            fclose($handle);
-            return back()->withErrors(['file' => 'El archivo CSV está vacío o es inválido.']);
-        }
-
-        // 3. Limpiar marcas de agua BOM UTF-8 y normalizar cabeceras
-        if (isset($header[0])) {
-            $header[0] = preg_replace('/\x{EF}\x{BB}\x{BF}/u', '', $header[0]);
-            $header[0] = str_replace("\xEF\xBB\xBF", '', $header[0]);
-        }
-        $header = array_map(fn($col) => strtolower(trim($col)), $header);
-
-        $userCompanyId = Auth::user()->company_id;
-        $importedCount = 0;
-
-        DB::beginTransaction();
-        try {
-            while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
-                // Omitir filas completamente vacías
-                if (empty($row) || (count($row) === 1 && trim($row[0]) === '')) {
-                    continue;
-                }
-
-                // Auto-nivelar columnas si la fila tiene menos o más elementos que la cabecera
-                $headerCount = count($header);
-                $rowCount = count($row);
-
-                if ($rowCount < $headerCount) {
-                    $row = array_pad($row, $headerCount, '');
-                } elseif ($rowCount > $headerCount) {
-                    $row = array_slice($row, 0, $headerCount);
-                }
-
-                $data = array_combine($header, $row);
-
-                // Normalización de tipos (soporta company, empresa, person, persona, individual, particular)
-                $rawType = strtolower(trim($data['type'] ?? 'company'));
-                if (in_array($rawType, ['person', 'persona', 'individual', 'particular'])) {
-                    $type = 'person';
-                } else {
-                    $type = 'company';
-                }
-
-                $firstName   = trim($data['first_name'] ?? '');
-                $lastName    = trim($data['last_name'] ?? '');
-                $companyName = trim($data['company_name'] ?? '');
-
-                // Fallback inteligente para nombres en campos cruzados
-                if ($type === 'company' && empty($companyName)) {
-                    $companyName = trim("{$firstName} {$lastName}");
-                }
-
-                if ($type === 'person' && empty($firstName)) {
-                    $firstName = $companyName ?: $lastName;
-                }
-
-                // Omitir solo si no existe absolutamente ningún nombre identificable
-                if (empty($companyName) && empty($firstName) && empty($lastName)) {
-                    continue;
-                }
-
-                // Validar formato de email
-                $rawEmail = trim($data['email'] ?? '');
-                $email = filter_var($rawEmail, FILTER_VALIDATE_EMAIL) ? $rawEmail : null;
-
-                // 1. Crear el Cliente (Entidad de facturación)
-                $client = Client::create([
-                    'company_id'     => $userCompanyId,
-                    'type'           => $type,
-                    'company_name'   => $type === 'company' ? $companyName : trim("{$firstName} {$lastName}"),
-                    'website'        => !empty($data['website']) ? trim($data['website']) : null,
-                    'language'       => !empty($data['language']) ? trim($data['language']) : 'es',
-                    'portal_enabled' => filter_var($data['portal_enabled'] ?? false, FILTER_VALIDATE_BOOLEAN),
-                ]);
-
-                // 2. Crear el Contacto Principal asociado
-                $client->contacts()->create([
-                    'company_id' => $userCompanyId,
-                    'first_name' => $firstName ?: ($type === 'company' ? $companyName : 'Contacto'),
-                    'last_name'  => $lastName ?: '',
-                    'email'      => $email,
-                    'phone'      => !empty($data['phone']) ? trim($data['phone']) : null,
-                    'is_primary' => true,
-                ]);
-
-                $importedCount++;
-            }
-
-            DB::commit();
-            fclose($handle);
-
-            return redirect()
-                ->route('clients.index')
-                ->with('success', "Se importaron exitosamente {$importedCount} clientes.");
-        } catch (\Exception $e) {
-            DB::rollBack();
-            fclose($handle);
-
-            return back()->withErrors(['file' => 'Error al procesar el archivo CSV: ' . $e->getMessage()]);
-        }
-    }
-
-    public function downloadTemplate(): StreamedResponse
-    {
-        $headers = [
-            'Content-Type'        => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="plantilla_clientes.csv"',
-        ];
-
-        $columns = [
+        $requiredHeaders = [
             'type',
             'company_name',
             'first_name',
@@ -150,44 +35,101 @@ class ClientImportController extends Controller
             'phone',
             'website',
             'language',
-            'portal_enabled'
+            'portal_enabled',
         ];
 
-        $callback = function () use ($columns) {
-            $file = fopen('php://output', 'w');
-            
-            // BOM UTF-8 para apertura correcta en Excel
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+        // Validaciones por fila
+        $validator = function (array $data) {
+            $errors = [];
+            $type = strtolower($data['type'] ?? 'company');
+            $isPerson = in_array($type, ['person', 'persona', 'individual', 'particular'], true);
 
-            fputcsv($file, $columns);
+            if (!$isPerson && empty($data['company_name'])) {
+                $errors[] = "El campo 'company_name' es obligatorio para tipo empresa.";
+            }
 
-            fputcsv($file, [
-                'company', 
-                'Acme Corporation', 
-                'Carlos', 
-                'Mendoza', 
-                'carlos@acme.com', 
-                '+525512345678', 
-                'https://acme.com', 
-                'es', 
-                '1'
-            ]);
+            if ($isPerson && empty($data['first_name'])) {
+                $errors[] = "El campo 'first_name' es obligatorio para clientes individuales.";
+            }
 
-            fputcsv($file, [
-                'person', 
-                '', 
-                'Ana', 
-                'García', 
-                'ana.garcia@email.com', 
-                '+34612345678', 
-                '', 
-                'es', 
-                '0'
-            ]);
+            if (empty($data['email'])) {
+                $errors[] = "El campo 'email' es obligatorio.";
+            } elseif (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+                $errors[] = "El correo '{$data['email']}' no tiene un formato válido.";
+            }
 
-            fclose($file);
+            return $errors;
         };
 
-        return response()->stream($callback, 200, $headers);
+        // Callback de persistencia
+        $importer = function (array $data) use ($companyId) {
+            $rawType = strtolower($data['type'] ?? 'company');
+            $isPerson = in_array($rawType, ['person', 'persona', 'individual', 'particular'], true);
+            $type = $isPerson ? 'person' : 'company';
+
+            $client = Client::create([
+                'company_id'     => $companyId,
+                'type'           => $type,
+                'company_name'   => $type === 'company'
+                    ? $data['company_name']
+                    : trim("{$data['first_name']} {$data['last_name']}"),
+                'website'        => $data['website'] ?: null,
+                'language'       => $data['language'] ?: 'es',
+                'portal_enabled' => filter_var($data['portal_enabled'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            ]);
+
+            $client->contacts()->create([
+                'company_id' => $companyId,
+                'first_name' => $data['first_name'] ?: ($type === 'company' ? $data['company_name'] : 'Contacto'),
+                'last_name'  => $data['last_name'] ?: '',
+                'email'      => $data['email'],
+                'phone'      => $data['phone'] ?: null,
+                'is_primary' => true,
+            ]);
+        };
+
+        $result = $this->importService->process($request->file('file'), $requiredHeaders, $validator, $importer);
+
+        if ($result['status'] === 'header_error') {
+            return back()->withErrors(['file' => $result['message']]);
+        }
+
+        $logId = null;
+        if ($result['failed_count'] > 0) {
+            $log = ImportLog::create([
+                'user_id'        => $user->id,
+                'company_id'     => $companyId,
+                'entity_type'    => 'client',
+                'imported_count' => $result['imported_count'],
+                'failed_count'   => $result['failed_count'],
+                'errors'         => $result['error_logs'],
+            ]);
+            $logId = $log->id;
+        }
+
+        $message = "Se importaron {$result['imported_count']} clientes correctamente.";
+        if ($result['failed_count'] > 0) {
+            $message .= " {$result['failed_count']} filas contenían errores y fueron omitidas.";
+        }
+
+        return redirect()->route('clients.index')->with([
+            'success'           => $message,
+            'has_import_errors' => $result['failed_count'] > 0,
+            'import_log_id'     => $logId,
+        ]);
+    }
+
+    public function downloadTemplate(): StreamedResponse
+    {
+        $columns = ['type', 'company_name', 'first_name', 'last_name', 'email', 'phone', 'website', 'language', 'portal_enabled'];
+
+        return response()->streamDownload(function () use ($columns) {
+            $file = fopen('php://output', 'w');
+            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+            fputcsv($file, $columns);
+            fputcsv($file, ['company', 'Acme Corporation', 'Carlos', 'Mendoza', 'carlos@acme.com', '+525512345678', 'https://acme.com', 'es', '1']);
+            fputcsv($file, ['individual', '', 'Ana', 'García', 'ana.garcia@email.com', '+34612345678', '', 'es', '0']);
+            fclose($file);
+        }, 'plantilla_clientes.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 }

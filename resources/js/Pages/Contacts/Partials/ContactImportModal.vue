@@ -1,6 +1,7 @@
+<!-- resources/js/Pages/Contacts/Partials/ContactImportModal.vue -->
 <script setup>
-import { ref } from 'vue'
-import { useForm } from '@inertiajs/vue3'
+import { ref, computed } from 'vue'
+import { useForm, usePage } from '@inertiajs/vue3'
 
 import Modal from '@/Components/UI/Modal/Modal.vue'
 import PrimaryButton from '@/Components/UI/Buttons/PrimaryButton.vue'
@@ -20,7 +21,8 @@ const props = defineProps({
     },
 })
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'success'])
+const page = usePage()
 
 const fileInputRef = ref(null)
 const selectedFile = ref(null)
@@ -28,6 +30,8 @@ const selectedFile = ref(null)
 const form = useForm({
     file: null,
 })
+
+const fileError = computed(() => page.props.errors?.file || form.errors.file)
 
 const handleFileSelect = (event) => {
     const file = event.target.files[0]
@@ -54,18 +58,6 @@ const closeModal = () => {
     emit('close')
 }
 
-const getTemplateRoute = () => {
-    try {
-        return route().has('contacts.import.template')
-            ? route('contacts.import.template')
-            : route().has('contacts.template')
-            ? route('contacts.template')
-            : '#'
-    } catch (e) {
-        return '#'
-    }
-}
-
 const submit = () => {
     if (!form.file) return
 
@@ -73,10 +65,8 @@ const submit = () => {
         preserveScroll: true,
         onSuccess: () => {
             closeModal()
+            emit('success')
         },
-        onError: () => {
-            // Manejo de error para evitar que la UI se cuelgue
-        }
     })
 }
 </script>
@@ -94,17 +84,22 @@ const submit = () => {
             </div>
         </template>
 
-        <form @submit.prevent="submit" class="space-y-8 px-1">
+        <form @submit.prevent="submit" class="space-y-6 px-1">
             <div
                 @click="fileInputRef.click()"
                 @dragover.prevent
                 @drop.prevent="handleDrop"
-                class="group relative cursor-pointer overflow-hidden rounded-3xl border border-black/10 dark:border-white/20 bg-white/40 dark:bg-white/5 backdrop-blur-xl p-10 text-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] transition-all duration-300 hover:border-[#007AFF]/50 hover:bg-white/60 dark:hover:bg-white/10 hover:shadow-lg hover:shadow-[#007AFF]/5"
+                class="group relative cursor-pointer overflow-hidden rounded-3xl border p-8 text-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] transition-all duration-300 backdrop-blur-xl"
+                :class="
+                    fileError
+                        ? 'border-red-500/50 bg-red-500/5 hover:bg-red-500/10'
+                        : 'border-black/10 dark:border-white/20 bg-white/40 dark:bg-white/5 hover:border-[#007AFF]/50 hover:bg-white/60 dark:hover:bg-white/10 hover:shadow-lg hover:shadow-[#007AFF]/5'
+                "
             >
                 <input
                     ref="fileInputRef"
                     type="file"
-                    accept=".csv, .xlsx"
+                    accept=".csv"
                     class="hidden"
                     @change="handleFileSelect"
                 />
@@ -146,9 +141,17 @@ const submit = () => {
                 </div>
             </div>
 
-            <div v-if="form.errors.file" class="flex items-center gap-2 rounded-xl bg-red-50 dark:bg-red-500/10 p-3 text-sm font-medium text-red-600 dark:text-red-400">
-                <ExclamationCircleIcon class="h-5 w-5 shrink-0" />
-                <span>{{ form.errors.file }}</span>
+            <!-- Excepción de Formato de Plantilla o Headers en Rojo -->
+            <div v-if="fileError" class="flex items-start gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm font-medium text-red-600 dark:text-red-400">
+                <ExclamationCircleIcon class="h-5 w-5 shrink-0 mt-0.5 text-red-500" />
+                <div>
+                    <p class="font-bold text-red-700 dark:text-red-300">
+                        No se pudo procesar la importación
+                    </p>
+                    <p class="mt-1 text-xs text-red-600 dark:text-red-400">
+                        {{ fileError }}
+                    </p>
+                </div>
             </div>
 
             <div class="rounded-2xl border border-black/5 dark:border-white/10 bg-black/5 dark:bg-white/[0.03] p-5 text-sm space-y-3 backdrop-blur-md">
@@ -158,7 +161,7 @@ const submit = () => {
                     </span>
 
                     <a
-                        :href="getTemplateRoute()"
+                        :href="route('contacts.import.template')"
                         download
                         class="inline-flex items-center gap-1.5 rounded-lg text-sm font-semibold text-[#007AFF] transition hover:text-[#0056b3] dark:hover:text-[#3399ff] hover:underline shrink-0"
                     >
@@ -169,7 +172,7 @@ const submit = () => {
 
                 <div class="overflow-x-auto rounded-xl bg-white/50 dark:bg-black/30 p-3 shadow-inner">
                     <p class="whitespace-nowrap font-mono text-[13px] text-[#007AFF] dark:text-[#3399ff]">
-                        first_name, last_name, email, phone, position, company_name, is_primary
+                        first_name, last_name, email, phone, position, client_id
                     </p>
                 </div>
             </div>

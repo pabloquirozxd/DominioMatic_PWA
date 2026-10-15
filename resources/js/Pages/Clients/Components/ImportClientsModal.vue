@@ -1,6 +1,7 @@
+<!-- resources/js/Pages/Clients/Components/ImportClientsModal.vue -->
 <script setup>
-import { ref } from 'vue'
-import { useForm } from '@inertiajs/vue3'
+import { ref, computed } from 'vue'
+import { useForm, usePage } from '@inertiajs/vue3'
 
 import Modal from '@/Components/UI/Modal/Modal.vue'
 import PrimaryButton from '@/Components/UI/Buttons/PrimaryButton.vue'
@@ -20,7 +21,8 @@ const props = defineProps({
     },
 })
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'success'])
+const page = usePage()
 
 const fileInputRef = ref(null)
 const selectedFile = ref(null)
@@ -28,6 +30,9 @@ const selectedFile = ref(null)
 const form = useForm({
     file: null,
 })
+
+// Acceso a errores enviado por Laravel Inertia (validación de archivo / cabeceras)
+const fileError = computed(() => page.props.errors?.file || form.errors.file)
 
 const handleFileSelect = (event) => {
     const file = event.target.files[0]
@@ -61,6 +66,7 @@ const submit = () => {
         preserveScroll: true,
         onSuccess: () => {
             closeModal()
+            emit('success')
         },
     })
 }
@@ -79,17 +85,23 @@ const submit = () => {
             </div>
         </template>
 
-        <form @submit.prevent="submit" class="space-y-8 px-1">
+        <form @submit.prevent="submit" class="space-y-6 px-1">
+            <!-- Dropzone / Selector de archivo -->
             <div
                 @click="fileInputRef.click()"
                 @dragover.prevent
                 @drop.prevent="handleDrop"
-                class="group relative cursor-pointer overflow-hidden rounded-3xl border border-black/10 dark:border-white/20 bg-white/40 dark:bg-white/5 backdrop-blur-xl p-10 text-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] transition-all duration-300 hover:border-[#007AFF]/50 hover:bg-white/60 dark:hover:bg-white/10 hover:shadow-lg hover:shadow-[#007AFF]/5"
+                class="group relative cursor-pointer overflow-hidden rounded-3xl border p-8 text-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] transition-all duration-300 backdrop-blur-xl"
+                :class="
+                    fileError
+                        ? 'border-red-500/50 bg-red-500/5 hover:bg-red-500/10'
+                        : 'border-black/10 dark:border-white/20 bg-white/40 dark:bg-white/5 hover:border-[#007AFF]/50 hover:bg-white/60 dark:hover:bg-white/10 hover:shadow-lg hover:shadow-[#007AFF]/5'
+                "
             >
                 <input
                     ref="fileInputRef"
                     type="file"
-                    accept=".csv, .xlsx"
+                    accept=".csv"
                     class="hidden"
                     @change="handleFileSelect"
                 />
@@ -131,11 +143,20 @@ const submit = () => {
                 </div>
             </div>
 
-            <div v-if="form.errors.file" class="flex items-center gap-2 rounded-xl bg-red-50 dark:bg-red-500/10 p-3 text-sm font-medium text-red-600 dark:text-red-400">
-                <ExclamationCircleIcon class="h-5 w-5 shrink-0" />
-                <span>{{ form.errors.file }}</span>
+            <!-- Excepción de Formato de Plantilla o Headers en Rojo -->
+            <div v-if="fileError" class="flex items-start gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm font-medium text-red-600 dark:text-red-400">
+                <ExclamationCircleIcon class="h-5 w-5 shrink-0 mt-0.5 text-red-500" />
+                <div>
+                    <p class="font-bold text-red-700 dark:text-red-300">
+                        No se pudo procesar la importación
+                    </p>
+                    <p class="mt-1 text-xs text-red-600 dark:text-red-400">
+                        {{ fileError }}
+                    </p>
+                </div>
             </div>
 
+            <!-- Cuadro Informativo de Cabeceras Aceptadas -->
             <div class="rounded-2xl border border-black/5 dark:border-white/10 bg-black/5 dark:bg-white/[0.03] p-5 text-sm space-y-3 backdrop-blur-md">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <span class="font-semibold text-gray-900 dark:text-gray-200">
@@ -159,6 +180,7 @@ const submit = () => {
                 </div>
             </div>
 
+            <!-- Botones de Acción -->
             <div class="flex items-center justify-end gap-3 pt-2">
                 <SecondaryButton @click="closeModal" type="button">
                     Cancelar

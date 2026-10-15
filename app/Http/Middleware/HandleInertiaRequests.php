@@ -88,9 +88,11 @@ class HandleInertiaRequests extends Middleware
 
             // Mensajes flash
             'flash' => [
-                'success' => fn () => $request->session()->get('success'),
-                'error'   => fn () => $request->session()->get('error'),
-                'info'    => fn () => $request->session()->get('info'),
+                'success'           => fn () => $request->session()->get('success'),
+                'error'             => fn () => $request->session()->get('error'),
+                'info'              => fn () => $request->session()->get('info'),
+                'has_import_errors' => fn () => $request->session()->get('has_import_errors'),
+                'import_log_id'     => fn () => $request->session()->get('import_log_id'),
             ],
         ];
     }

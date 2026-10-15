@@ -21,6 +21,8 @@ import {
     TableCellsIcon,
     ArrowUpTrayIcon,
     ChevronDownIcon,
+    ExclamationTriangleIcon,
+    ArrowDownTrayIcon,
 } from '@heroicons/vue/24/outline'
 
 defineOptions({
@@ -105,6 +107,10 @@ function removeProduct(id) {
     router.delete(route('products.destroy', id), {
         preserveScroll: true,
     })
+}
+
+function handleRefresh() {
+    router.reload({ only: ['products'] })
 }
 </script>
 
@@ -226,14 +232,43 @@ function removeProduct(id) {
                 </div>
             </header>
 
+            <!-- BANNER DE ERRORES PARCIALES DE IMPORTACIÓN -->
+            <div
+                v-if="$page.props.flash?.has_import_errors && $page.props.flash?.import_log_id"
+                class="mb-6 rounded-[24px] border border-amber-300/80 bg-amber-50/90 p-5 shadow-lg backdrop-blur-xl dark:border-amber-500/30 dark:bg-amber-950/40"
+            >
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="flex items-start gap-3.5">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                            <ExclamationTriangleIcon class="h-6 w-6 stroke-[2]" />
+                        </div>
+                        <div>
+                            <h3 class="text-base font-bold text-amber-950 dark:text-amber-200">
+                                Importación completada con observaciones
+                            </h3>
+                            <p class="mt-0.5 text-xs text-amber-800 dark:text-amber-300">
+                                {{ $page.props.flash?.success }} Descarga el reporte para revisar las filas omitidas.
+                            </p>
+                        </div>
+                    </div>
+
+                    <a
+                        :href="route('imports.download-error-log', { uuid: $page.props.flash.import_log_id })"
+                        class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-amber-600/20 transition hover:bg-amber-700 active:scale-95"
+                    >
+                        <ArrowDownTrayIcon class="h-4 w-4 stroke-[2.5]" />
+                        <span>Descargar informe de errores (.csv)</span>
+                    </a>
+                </div>
+            </div>
+
             <!-- STATS -->
             <ProductStats :stats="stats" class="mb-8" />
 
-            <!-- SEARCH + TABLE (single container, matching Contacts) -->
+            <!-- SEARCH + TABLE -->
             <div
                 class="rounded-[28px] border border-white/65 bg-white/35 p-2 shadow-[0_22px_70px_rgba(15,23,42,0.06),inset_0_1px_2px_rgba(255,255,255,0.85),inset_0_-2px_5px_rgba(0,0,0,0.06)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#101014]/65 dark:shadow-[0_22px_70px_rgba(0,0,0,0.28),inset_0_1px_2px_rgba(255,255,255,0.16),inset_0_-2px_6px_rgba(0,0,0,0.5)] sm:p-3"
             >
-                <!-- Search field inside the container -->
                 <div
                     class="mb-3 rounded-[20px] border border-white/60 bg-white/45 p-1.5 dark:border-white/[0.08] dark:bg-white/[0.03]"
                 >
@@ -251,7 +286,6 @@ function removeProduct(id) {
                     </div>
                 </div>
 
-                <!-- Table -->
                 <ProductTable
                     :products="filteredProducts"
                     @edit="openEditModal"
@@ -272,6 +306,7 @@ function removeProduct(id) {
     <ProductImportModal
         :show="showImportModal"
         @close="showImportModal = false"
+        @success="handleRefresh"
     />
 
     <ProductDetailModal

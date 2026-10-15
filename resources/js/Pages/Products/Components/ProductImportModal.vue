@@ -1,7 +1,7 @@
 <!-- resources/js/Pages/Products/Components/ProductImportModal.vue -->
 <script setup>
-import { ref } from 'vue'
-import { useForm } from '@inertiajs/vue3'
+import { ref, computed } from 'vue'
+import { useForm, usePage } from '@inertiajs/vue3'
 
 import Modal from '@/Components/UI/Modal/Modal.vue'
 import PrimaryButton from '@/Components/UI/Buttons/PrimaryButton.vue'
@@ -21,7 +21,8 @@ const props = defineProps({
     },
 })
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'success'])
+const page = usePage()
 
 const fileInputRef = ref(null)
 const selectedFile = ref(null)
@@ -29,6 +30,8 @@ const selectedFile = ref(null)
 const form = useForm({
     file: null,
 })
+
+const fileError = computed(() => page.props.errors?.file || form.errors.file)
 
 const handleFileSelect = (event) => {
     const file = event.target.files[0]
@@ -55,18 +58,6 @@ const closeModal = () => {
     emit('close')
 }
 
-const getTemplateRoute = () => {
-    try {
-        return route().has('products.import.template')
-            ? route('products.import.template')
-            : route().has('products.template')
-            ? route('products.template')
-            : '#'
-    } catch (e) {
-        return '#'
-    }
-}
-
 const submit = () => {
     if (!form.file) return
 
@@ -74,8 +65,8 @@ const submit = () => {
         preserveScroll: true,
         onSuccess: () => {
             closeModal()
+            emit('success')
         },
-        onError: () => {}
     })
 }
 </script>
@@ -85,26 +76,30 @@ const submit = () => {
         <template #header>
             <div class="px-1">
                 <h2 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-                    Importar catálogo
+                    Importar productos & servicios
                 </h2>
                 <p class="mt-2 text-base text-gray-600 dark:text-gray-300">
-                    Sube un archivo CSV o XLSX para registrar productos y servicios masivamente.
+                    Sube un archivo CSV para registrar ítems en tu catálogo de forma masiva.
                 </p>
             </div>
         </template>
 
-        <form @submit.prevent="submit" class="space-y-8 px-1">
-            <!-- Zona Drag & Drop -->
+        <form @submit.prevent="submit" class="space-y-6 px-1">
             <div
                 @click="fileInputRef.click()"
                 @dragover.prevent
                 @drop.prevent="handleDrop"
-                class="group relative cursor-pointer overflow-hidden rounded-3xl border border-black/10 dark:border-white/20 bg-white/40 dark:bg-white/5 backdrop-blur-xl p-10 text-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] transition-all duration-300 hover:border-[#007AFF]/50 hover:bg-white/60 dark:hover:bg-white/10 hover:shadow-lg hover:shadow-[#007AFF]/5"
+                class="group relative cursor-pointer overflow-hidden rounded-3xl border p-8 text-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] transition-all duration-300 backdrop-blur-xl"
+                :class="
+                    fileError
+                        ? 'border-red-500/50 bg-red-500/5 hover:bg-red-500/10'
+                        : 'border-black/10 dark:border-white/20 bg-white/40 dark:bg-white/5 hover:border-[#007AFF]/50 hover:bg-white/60 dark:hover:bg-white/10 hover:shadow-lg hover:shadow-[#007AFF]/5'
+                "
             >
                 <input
                     ref="fileInputRef"
                     type="file"
-                    accept=".csv, .xlsx"
+                    accept=".csv"
                     class="hidden"
                     @change="handleFileSelect"
                 />
@@ -114,7 +109,7 @@ const submit = () => {
                         <ArrowUpTrayIcon class="h-8 w-8 stroke-[2]" />
                     </div>
                     <p class="text-base font-semibold text-gray-900 dark:text-white">
-                        Haz clic o arrastra tu archivo CSV o XLSX aquí
+                        Haz clic o arrastra tu archivo CSV aquí
                     </p>
                     <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
                         Soporta codificación UTF-8 hasta 5MB
@@ -146,20 +141,27 @@ const submit = () => {
                 </div>
             </div>
 
-            <div v-if="form.errors.file" class="flex items-center gap-2 rounded-xl bg-red-50 dark:bg-red-500/10 p-3 text-sm font-medium text-red-600 dark:text-red-400">
-                <ExclamationCircleIcon class="h-5 w-5 shrink-0" />
-                <span>{{ form.errors.file }}</span>
+            <!-- Excepción de Formato de Plantilla o Headers en Rojo -->
+            <div v-if="fileError" class="flex items-start gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm font-medium text-red-600 dark:text-red-400">
+                <ExclamationCircleIcon class="h-5 w-5 shrink-0 mt-0.5 text-red-500" />
+                <div>
+                    <p class="font-bold text-red-700 dark:text-red-300">
+                        No se pudo procesar la importación
+                    </p>
+                    <p class="mt-1 text-xs text-red-600 dark:text-red-400">
+                        {{ fileError }}
+                    </p>
+                </div>
             </div>
 
-            <!-- Panel Informativo Glassmorphism con Cabeceras Actualizadas -->
             <div class="rounded-2xl border border-black/5 dark:border-white/10 bg-black/5 dark:bg-white/[0.03] p-5 text-sm space-y-3 backdrop-blur-md">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <span class="font-semibold text-gray-900 dark:text-gray-200">
-                        Cabeceras del archivo (primera fila):
+                        Cabeceras aceptadas (primera fila):
                     </span>
 
                     <a
-                        :href="getTemplateRoute()"
+                        :href="route('products.import.template')"
                         download
                         class="inline-flex items-center gap-1.5 rounded-lg text-sm font-semibold text-[#007AFF] transition hover:text-[#0056b3] dark:hover:text-[#3399ff] hover:underline shrink-0"
                     >
@@ -173,12 +175,6 @@ const submit = () => {
                         type, name, description, price_list, currency, is_infinite, stock
                     </p>
                 </div>
-
-                <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-                    • <strong>type:</strong> <code>service</code> (Servicio) o <code>product</code> (Producto).<br />
-                    • <strong>is_infinite:</strong> <code>1</code> (Ilimitado) o <code>0</code> (Finito).<br />
-                    • <strong>stock:</strong> Requerido si <code>type=product</code> e <code>is_infinite=0</code>.
-                </p>
             </div>
 
             <div class="flex items-center justify-end gap-3 pt-2">
